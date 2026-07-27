@@ -1,0 +1,5 @@
+label,max_percent,color
+Loss,-5,#000000
+Break-even,5,#e6194b
+Moderate,15,#f58231
+Strong,,#3cb44b

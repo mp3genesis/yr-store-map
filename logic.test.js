@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import Papa from 'papaparse';
 import {
+  sanitizeNumber,
   sanitizeCoordinate,
   hasValue,
   parseStores,
@@ -8,9 +9,11 @@ import {
   saveCache,
   loadCache,
   isValidHexColor,
-  parseProvinceColors,
-  parseColorsCSVText,
-  DEFAULT_PROVINCE_COLORS,
+  getProfitabilityColor,
+  parseProfitabilityTiers,
+  parseTiersCSVText,
+  DEFAULT_PROFITABILITY_TIERS,
+  DEFAULT_MARKER_COLOR,
 } from './logic.js';
 
 describe('sanitizeCoordinate', () => {
@@ -31,6 +34,18 @@ describe('sanitizeCoordinate', () => {
 
   it('returns null for non-numeric garbage', () => {
     expect(sanitizeCoordinate('not-a-number')).toBeNull();
+  });
+});
+
+describe('sanitizeNumber', () => {
+  it('handles negative comma-decimal values (profitability can be negative)', () => {
+    expect(sanitizeNumber('-5,5')).toBe(-5.5);
+    expect(sanitizeNumber('-12.3')).toBe(-12.3);
+  });
+
+  it('handles a plain integer percentage', () => {
+    expect(sanitizeNumber('20')).toBe(20);
+    expect(sanitizeNumber('0')).toBe(0);
   });
 });
 
@@ -69,8 +84,18 @@ describe('parseStores', () => {
         phone: null,
         managerContact: null,
         updatedAt: null,
+        profitabilityPct: null,
       },
     ]);
+  });
+
+  it('parses profitability_pct as a number, including negative values', () => {
+    const { stores } = parseStores([
+      { code: '0001', name: 'Profitable', lat: '50', long: '4', profitability_pct: '18.5' },
+      { code: '0002', name: 'Loss', lat: '50', long: '4', profitability_pct: '-7,2' },
+    ]);
+    expect(stores[0].profitabilityPct).toBe(18.5);
+    expect(stores[1].profitabilityPct).toBe(-7.2); // comma-decimal sanitized
   });
 
   it('skips a row with a missing code', () => {
@@ -158,50 +183,92 @@ describe('isValidHexColor', () => {
   });
 });
 
-describe('parseProvinceColors', () => {
-  it('builds a province-to-color map from well-formed rows', () => {
-    const { colors, skipped } = parseProvinceColors([
-      { province: 'Namur', color: '#3cb44b' },
-      { province: 'Hainaut', color: '#9a6324' },
-    ]);
-    expect(skipped).toHaveLength(0);
-    expect(colors).toEqual({ Namur: '#3cb44b', Hainaut: '#9a6324' });
+describe('getProfitabilityColor (default tiers: Loss <-5, Break-even [-5,5), Moderate [5,15), Strong >=15)', () => {
+  it('returns black for a significant loss (below -5%)', () => {
+    expect(getProfitabilityColor(-10)).toBe('#000000');
+    expect(getProfitabilityColor(-5.01)).toBe('#000000');
   });
 
-  it('skips a row with a missing province', () => {
-    const { colors, skipped } = parseProvinceColors([{ color: '#3cb44b' }]);
-    expect(colors).toEqual({});
-    expect(skipped).toHaveLength(1);
-    expect(skipped[0].reason).toBe('missing province');
+  it('returns red for the break-even band, including the -5% boundary itself', () => {
+    expect(getProfitabilityColor(-5)).toBe('#e6194b'); // boundary belongs to the upper tier
+    expect(getProfitabilityColor(0)).toBe('#e6194b');
+    expect(getProfitabilityColor(4.99)).toBe('#e6194b');
   });
 
-  it('skips a row with a missing or invalid color, rather than breaking rendering', () => {
-    const { colors, skipped } = parseProvinceColors([
-      { province: 'Namur', color: '' },
-      { province: 'Hainaut', color: 'not-a-color' },
-    ]);
-    expect(colors).toEqual({});
-    expect(skipped).toHaveLength(2);
+  it('returns orange for moderate profitability, including the 5% boundary', () => {
+    expect(getProfitabilityColor(5)).toBe('#f58231');
+    expect(getProfitabilityColor(14.99)).toBe('#f58231');
   });
 
-  it('handles an empty row list without crashing', () => {
-    expect(parseProvinceColors([])).toEqual({ colors: {}, skipped: [] });
-    expect(parseProvinceColors(undefined)).toEqual({ colors: {}, skipped: [] });
+  it('returns green for strong profitability, including the 15% boundary and above', () => {
+    expect(getProfitabilityColor(15)).toBe('#3cb44b');
+    expect(getProfitabilityColor(50)).toBe('#3cb44b');
+  });
+
+  it('falls back to DEFAULT_MARKER_COLOR for missing/invalid data rather than guessing a tier', () => {
+    expect(getProfitabilityColor(null)).toBe(DEFAULT_MARKER_COLOR);
+    expect(getProfitabilityColor(undefined)).toBe(DEFAULT_MARKER_COLOR);
+    expect(getProfitabilityColor('not-a-number')).toBe(DEFAULT_MARKER_COLOR);
+  });
+
+  it('handles a comma-decimal percentage (Google Sheets locale risk)', () => {
+    expect(getProfitabilityColor('-7,5')).toBe('#000000');
   });
 });
 
-describe('parseColorsCSVText (PapaParse integration)', () => {
-  it('parses real CSV text end to end', () => {
-    const csv = 'province,color\nNamur,#3cb44b\nHainaut,#9a6324\n';
-    const { colors, skipped } = parseColorsCSVText(csv, Papa);
+describe('parseProfitabilityTiers', () => {
+  it('builds a sorted tier list from well-formed rows, in any input order', () => {
+    const { tiers, skipped } = parseProfitabilityTiers([
+      { label: 'Strong', max_percent: '', color: '#3cb44b' },
+      { label: 'Loss', max_percent: '-5', color: '#000000' },
+      { label: 'Moderate', max_percent: '15', color: '#f58231' },
+      { label: 'Break-even', max_percent: '5', color: '#e6194b' },
+    ]);
     expect(skipped).toHaveLength(0);
-    expect(colors).toEqual({ Namur: '#3cb44b', Hainaut: '#9a6324' });
+    expect(tiers).toEqual([
+      { label: 'Loss', maxPercent: -5, color: '#000000' },
+      { label: 'Break-even', maxPercent: 5, color: '#e6194b' },
+      { label: 'Moderate', maxPercent: 15, color: '#f58231' },
+      { label: 'Strong', maxPercent: null, color: '#3cb44b' },
+    ]);
   });
 
-  it('every DEFAULT_PROVINCE_COLORS entry is itself a valid hex color', () => {
-    // Guards against a typo in the fallback palette breaking rendering silently.
-    for (const [province, color] of Object.entries(DEFAULT_PROVINCE_COLORS)) {
-      expect(isValidHexColor(color), `${province}: ${color}`).toBe(true);
+  it('skips a row with a missing or invalid color, rather than breaking rendering', () => {
+    const { tiers, skipped } = parseProfitabilityTiers([
+      { label: 'Bad', max_percent: '5', color: '' },
+      { label: 'AlsoBad', max_percent: '10', color: 'not-a-color' },
+    ]);
+    expect(tiers).toHaveLength(0);
+    expect(skipped).toHaveLength(2);
+  });
+
+  it('skips a row with a non-numeric max_percent (but empty is valid — means "no upper bound")', () => {
+    const { tiers, skipped } = parseProfitabilityTiers([
+      { label: 'Bad', max_percent: 'not-a-number', color: '#000000' },
+    ]);
+    expect(tiers).toHaveLength(0);
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0].reason).toMatch(/invalid max_percent/);
+  });
+
+  it('handles an empty row list without crashing', () => {
+    expect(parseProfitabilityTiers([])).toEqual({ tiers: [], skipped: [] });
+    expect(parseProfitabilityTiers(undefined)).toEqual({ tiers: [], skipped: [] });
+  });
+});
+
+describe('parseTiersCSVText (PapaParse integration)', () => {
+  it('parses real CSV text end to end', () => {
+    const csv = 'label,max_percent,color\nLoss,-5,#000000\nBreak-even,5,#e6194b\nModerate,15,#f58231\nStrong,,#3cb44b\n';
+    const { tiers, skipped } = parseTiersCSVText(csv, Papa);
+    expect(skipped).toHaveLength(0);
+    expect(tiers).toEqual(DEFAULT_PROFITABILITY_TIERS);
+  });
+
+  it('every DEFAULT_PROFITABILITY_TIERS color is itself valid hex', () => {
+    // Guards against a typo in the fallback tiers breaking rendering silently.
+    for (const tier of DEFAULT_PROFITABILITY_TIERS) {
+      expect(isValidHexColor(tier.color), `${tier.label}: ${tier.color}`).toBe(true);
     }
   });
 });

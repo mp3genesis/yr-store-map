@@ -75,20 +75,37 @@ colleagues who need performance/sensitive notes.
 Report back what you find (the published CSV URL — needed for T3 — and the
 measured latency) and I'll wire it into `index.html`.
 
-## 7. ProvinceColors tab (lets you change map colors without touching code)
+## 7. Add the profitability_pct column to your existing Ops tab
 
-1. Add a third tab, rename it to `ProvinceColors`.
-2. File > Import > Upload `data/province-colors-seed.csv` into that tab
-   (same "replace current sheet" import). This seeds the 12 provinces with
-   the current map colors as a starting point — edit the `color` column
-   (any CSS hex color: `#rgb`, `#rrggbb`, or with alpha `#rrggbbaa`) to
-   change what shows up on the map. Province names must match the `Ops`
-   tab exactly (case-sensitive) or the color won't apply — a typo just
-   falls back to the default color for that province, it won't break
-   anything.
-3. File > Share > Publish to web > select the `ProvinceColors` tab >
+Your live Ops sheet was created before this column existed. Add a new
+column at the end named `profitability_pct` — a percentage, can be
+negative (e.g. `-7.5`, `12`, `22.3`). This drives the marker color on the
+map (see step 8) and replaces province-based coloring entirely — province
+stays visible in the info panel, it's just no longer the color source.
+
+## 8. ProfitabilityTiers tab (lets you change thresholds/colors without touching code)
+
+1. Add a new tab, rename it to `ProfitabilityTiers`.
+2. File > Import > Upload `data/profitability-tiers-seed.csv` into that tab
+   (same "replace current sheet" import). This seeds the 4 confirmed tiers:
+
+   | label | max_percent | color | meaning |
+   |---|---|---|---|
+   | Loss | -5 | #000000 (black) | below -5% |
+   | Break-even | 5 | #e6194b (red) | -5% up to (not including) 5% |
+   | Moderate | 15 | #f58231 (orange) | 5% up to (not including) 15% |
+   | Strong | *(empty)* | #3cb44b (green) | 15% and above |
+
+   `max_percent` is the upper bound of that tier (a store's percentage
+   belongs to the first row, top to bottom by max_percent, whose bound is
+   greater than its value). Leave `max_percent` empty on exactly one row
+   (the highest tier) to mean "and above, no upper bound" — that's what
+   `Strong` does above. Edit any threshold or any color (any CSS hex:
+   `#rgb`, `#rrggbb`, or with alpha `#rrggbbaa`) to change the map. A row
+   with an invalid color is silently skipped rather than breaking the map.
+3. File > Share > Publish to web > select the `ProfitabilityTiers` tab >
    format CSV > Publish. Copy the URL.
 
-Send me that URL and I'll drop it into `PROVINCE_COLORS_URL` in
-`index.html`. Until then the map just uses the hardcoded defaults — nothing
-breaks, this whole feature degrades gracefully if skipped.
+Send me that URL and I'll drop it into `PROFITABILITY_TIERS_URL` in
+`index.html`. Until then the map uses the hardcoded default tiers above —
+nothing breaks, this whole feature degrades gracefully if skipped.

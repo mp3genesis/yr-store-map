@@ -35,23 +35,24 @@
   <script type="module">
     import {
       parseCSVText,
-      parseColorsCSVText,
+      parseTiersCSVText,
       saveCache,
       loadCache,
       hasValue,
-      DEFAULT_PROVINCE_COLORS,
-      DEFAULT_MARKER_COLOR,
+      getProfitabilityColor,
+      DEFAULT_PROFITABILITY_TIERS,
     } from './logic.js';
 
     // Published "Ops" sheet CSV — see data/SETUP.md for how this is generated.
     const OPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=469869102&single=true&output=csv';
 
-    // Published "ProvinceColors" sheet CSV — lets colors be changed from the
-    // Sheet without touching code. Placeholder until that tab is created and
-    // published (see data/SETUP.md); until then this fetch just fails and the
-    // map falls back to DEFAULT_PROVINCE_COLORS below, which is fine — colors
-    // are cosmetic, not a load-bearing failure mode like the ops data is.
-    const PROVINCE_COLORS_URL = 'PLACEHOLDER_PROVINCE_COLORS_URL';
+    // Published "ProfitabilityTiers" sheet CSV — lets the thresholds and
+    // colors be changed from the Sheet without touching code. Placeholder
+    // until that tab is created and published (see data/SETUP.md); until
+    // then this fetch just fails and the map falls back to
+    // DEFAULT_PROFITABILITY_TIERS below, which is fine — this is cosmetic,
+    // not a load-bearing failure mode like the ops data is.
+    const PROFITABILITY_TIERS_URL = 'PLACEHOLDER_PROFITABILITY_TIERS_URL';
 
     const banner = document.getElementById('banner');
     const mapEl = document.getElementById('map');
@@ -88,6 +89,7 @@
     }
 
     function showStoreInfo(store) {
+      const profitability = store.profitabilityPct !== null ? `${store.profitabilityPct}%` : null;
       infoContent.innerHTML = `
         <h2>${escapeHtml(store.name || store.code)}</h2>
         ${fieldRow('Address', store.address)}
@@ -95,30 +97,31 @@
         ${fieldRow('Phone', store.phone)}
         ${fieldRow('Manager contact', store.managerContact)}
         ${fieldRow('Province', store.province)}
+        ${fieldRow('Profitability', profitability)}
       `;
       infoPanel.hidden = false;
     }
 
-    // Starts as the hardcoded defaults; fetchProvinceColors() overrides
-    // entries found in the published ProvinceColors sheet. Any province not
-    // present there (sheet not created yet, fetch failed, typo) keeps its
-    // default — colors are cosmetic, so a fetch failure here degrades
-    // gracefully instead of blocking the map like the ops-data fetch does.
-    let provinceColors = { ...DEFAULT_PROVINCE_COLORS };
+    // Starts as the hardcoded defaults; fetchProfitabilityTiers() replaces
+    // it wholesale if the published ProfitabilityTiers sheet parses with at
+    // least one valid tier. Colors/thresholds are cosmetic, so a fetch
+    // failure here degrades gracefully instead of blocking the map like the
+    // ops-data fetch does.
+    let profitabilityTiers = DEFAULT_PROFITABILITY_TIERS;
 
-    async function fetchProvinceColors() {
-      if (!PROVINCE_COLORS_URL || PROVINCE_COLORS_URL.startsWith('PLACEHOLDER')) {
+    async function fetchProfitabilityTiers() {
+      if (!PROFITABILITY_TIERS_URL || PROFITABILITY_TIERS_URL.startsWith('PLACEHOLDER')) {
         return; // sheet not set up yet — keep defaults, no error needed
       }
       try {
-        const response = await fetch(PROVINCE_COLORS_URL, { cache: 'no-store' });
+        const response = await fetch(PROFITABILITY_TIERS_URL, { cache: 'no-store' });
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const csvText = await response.text();
-        const { colors, skipped } = parseColorsCSVText(csvText);
-        if (skipped.length) console.warn('Skipped rows while parsing province colors:', skipped);
-        provinceColors = { ...DEFAULT_PROVINCE_COLORS, ...colors };
+        const { tiers, skipped } = parseTiersCSVText(csvText);
+        if (skipped.length) console.warn('Skipped rows while parsing profitability tiers:', skipped);
+        if (tiers.length) profitabilityTiers = tiers; // keep defaults if the sheet had nothing valid
       } catch (err) {
-        console.warn('Failed to fetch province colors, using defaults:', err);
+        console.warn('Failed to fetch profitability tiers, using defaults:', err);
       }
     }
 
@@ -140,7 +143,7 @@
       initMapIfNeeded();
       clusterGroup.clearLayers();
       for (const store of stores) {
-        const color = provinceColors[store.province] || DEFAULT_MARKER_COLOR;
+        const color = getProfitabilityColor(store.profitabilityPct, profitabilityTiers);
         const marker = L.circleMarker([store.lat, store.long], {
           radius: 8,
           color: '#222',
@@ -206,7 +209,7 @@
         showBanner('Map failed to load — check your connection (or disable content blockers for this page), then refresh.', 'error');
         return;
       }
-      await fetchProvinceColors(); // best-effort, never blocks on failure
+      await fetchProfitabilityTiers(); // best-effort, never blocks on failure
       fetchOpsData();
     }
 

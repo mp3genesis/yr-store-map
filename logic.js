@@ -8,16 +8,23 @@
 
 const CACHE_KEY = 'yr-store-map:cache:v1';
 
-// Google Sheets can render coordinates with a comma decimal separator
-// (e.g. "50,85") depending on the sheet's locale. Treat that as the default
-// risk, not an edge case: always normalize before parsing.
-export function sanitizeCoordinate(raw) {
+// Generic numeric parser handling Google Sheets' locale-dependent comma
+// decimal separator (e.g. "50,85" or "-5,5"). Returns null for anything
+// that doesn't parse to a finite number. Used for coordinates and for the
+// profitability percentage — same locale risk either way.
+export function sanitizeNumber(raw) {
   if (raw === null || raw === undefined) return null;
   const str = String(raw).trim();
   if (str === '') return null;
   const normalized = str.replace(',', '.');
   const value = parseFloat(normalized);
   return Number.isFinite(value) ? value : null;
+}
+
+// Kept as a named export (existing callers/tests depend on this name) —
+// coordinates are just numbers with the same comma-decimal risk.
+export function sanitizeCoordinate(raw) {
+  return sanitizeNumber(raw);
 }
 
 // A cell counts as "present" only if it has real content — empty string and
@@ -69,6 +76,9 @@ export function parseStores(rows) {
       phone: cleanField(row, 'phone'),
       managerContact: cleanField(row, 'manager_contact'),
       updatedAt: cleanField(row, 'updated_at'),
+      // Number or null (not a cleanField string) — a raw percentage, can be
+      // negative. Drives marker color via getProfitabilityColor().
+      profitabilityPct: sanitizeNumber(row.profitability_pct),
     });
   }
 
@@ -86,23 +96,6 @@ export function parseCSVText(csvText, PapaLib = (typeof Papa !== 'undefined' ? P
   return parseStores(parsed.data);
 }
 
-// Fallback palette, used whenever the ProvinceColors sheet is unavailable or
-// missing an entry for a given province. Also the starting point seeded into
-// that sheet — see data/province-colors-seed.csv.
-export const DEFAULT_PROVINCE_COLORS = {
-  'Brussels-Capital': '#e6194b',
-  'Namur': '#3cb44b',
-  'Walloon Brabant': '#ffe119',
-  'Liège': '#4363d8',
-  'West Flanders': '#f58231',
-  'Flemish Brabant': '#911eb4',
-  'Limburg': '#42d4f4',
-  'Antwerp': '#f032e6',
-  'East Flanders': '#bfef45',
-  'Grand Duchy of Luxembourg': '#469990',
-  'Hainaut': '#9a6324',
-  'Belgian Luxembourg': '#800000',
-};
 export const DEFAULT_MARKER_COLOR = '#666666';
 
 // Accepts #rgb, #rgba, #rrggbb, #rrggbbaa — anything a browser can use
@@ -111,41 +104,82 @@ export function isValidHexColor(value) {
   return typeof value === 'string' && /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
 }
 
-// Turns raw ProvinceColors rows into a { province: color } map. A row with
-// a missing province, or a color that isn't valid CSS hex, is skipped rather
-// than allowed to silently break rendering with an invalid color — callers
-// fall back to DEFAULT_PROVINCE_COLORS for any province missing from the
-// result (sheet not created yet, fetch failed, typo'd province name, etc).
-export function parseProvinceColors(rows) {
-  const colors = {};
+// Fallback tiers, used whenever the ProfitabilityTiers sheet is unavailable
+// or a row fails validation. Also the starting point seeded into that sheet
+// — see data/profitability-tiers-seed.csv. Sorted ascending by maxPercent;
+// the last tier's maxPercent is null, meaning "and above" (no upper bound).
+// A store's percentage falls into the first tier (in this order) whose
+// maxPercent is null or greater than the value — so [-Inf,-5) -> Loss,
+// [-5,5) -> Break-even, [5,15) -> Moderate, [15,+Inf) -> Strong.
+export const DEFAULT_PROFITABILITY_TIERS = [
+  { label: 'Loss', maxPercent: -5, color: '#000000' },
+  { label: 'Break-even', maxPercent: 5, color: '#e6194b' },
+  { label: 'Moderate', maxPercent: 15, color: '#f58231' },
+  { label: 'Strong', maxPercent: null, color: '#3cb44b' },
+];
+
+// Returns the color for a given profitability percentage, per the ordered
+// tier list (ascending maxPercent, last tier's maxPercent is null = no
+// upper bound). Missing/invalid data (null, NaN, non-numeric) falls back to
+// DEFAULT_MARKER_COLOR rather than guessing a tier.
+export function getProfitabilityColor(percent, tiers = DEFAULT_PROFITABILITY_TIERS) {
+  const value = sanitizeNumber(percent);
+  if (value === null) return DEFAULT_MARKER_COLOR;
+  for (const tier of tiers) {
+    if (tier.maxPercent === null || value < tier.maxPercent) {
+      return tier.color;
+    }
+  }
+  return DEFAULT_MARKER_COLOR;
+}
+
+// Turns raw ProfitabilityTiers sheet rows ({label, max_percent, color}) into
+// a validated, ascending-sorted tier list. A row with an invalid color is
+// skipped outright (never allowed to break rendering with a bad CSS value).
+// An empty/missing max_percent means "no upper bound" (null) — there should
+// be exactly one such row (the top tier), but this doesn't enforce that;
+// sorting naturally puts any null-bound row(s) last since null sorts as
+// +Infinity here.
+export function parseProfitabilityTiers(rows) {
+  const tiers = [];
   const skipped = [];
 
   for (const row of rows || []) {
-    const province = cleanField(row, 'province');
-    if (!province) {
-      skipped.push({ row, reason: 'missing province' });
-      continue;
-    }
     const color = cleanField(row, 'color');
     if (!color || !isValidHexColor(color)) {
       skipped.push({ row, reason: `invalid color: ${JSON.stringify(row.color)}` });
       continue;
     }
-    colors[province] = color.trim();
+    const maxPercentRaw = cleanField(row, 'max_percent');
+    let maxPercent = null;
+    if (maxPercentRaw !== null) {
+      maxPercent = sanitizeNumber(maxPercentRaw);
+      if (maxPercent === null) {
+        skipped.push({ row, reason: `invalid max_percent: ${JSON.stringify(row.max_percent)}` });
+        continue;
+      }
+    }
+    tiers.push({ label: cleanField(row, 'label'), maxPercent, color });
   }
 
-  return { colors, skipped };
+  tiers.sort((a, b) => {
+    const av = a.maxPercent === null ? Infinity : a.maxPercent;
+    const bv = b.maxPercent === null ? Infinity : b.maxPercent;
+    return av - bv;
+  });
+
+  return { tiers, skipped };
 }
 
-// Parses raw ProvinceColors CSV text the same way parseCSVText does for
+// Parses raw ProfitabilityTiers CSV text the same way parseCSVText does for
 // store data. Same PapaLib injection pattern (global Papa in production,
 // explicit package in tests).
-export function parseColorsCSVText(csvText, PapaLib = (typeof Papa !== 'undefined' ? Papa : undefined)) {
+export function parseTiersCSVText(csvText, PapaLib = (typeof Papa !== 'undefined' ? Papa : undefined)) {
   if (!PapaLib) {
-    throw new Error('parseColorsCSVText: PapaParse not available (pass PapaLib explicitly, or load it via <script> before this file runs)');
+    throw new Error('parseTiersCSVText: PapaParse not available (pass PapaLib explicitly, or load it via <script> before this file runs)');
   }
   const parsed = PapaLib.parse(csvText, { header: true, skipEmptyLines: true });
-  return parseProvinceColors(parsed.data);
+  return parseProfitabilityTiers(parsed.data);
 }
 
 // Persists the last successfully fetched store list. Fails silently
