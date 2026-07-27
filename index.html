@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yves Rocher — Belgium &amp; Luxembourg Stores</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Yves Rocher — Belgium &amp; Luxembourg Stores</h1>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <div id="map"></div>
+
+  <aside id="info-panel" hidden>
+    <button id="info-close" aria-label="Close">&times;</button>
+    <div id="info-content"></div>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""
+    onerror="window.__scriptLoadFailed = true"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    onerror="window.__scriptLoadFailed = true"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"
+    onerror="window.__scriptLoadFailed = true"></script>
+
+  <script type="module">
+    import { parseCSVText, saveCache, loadCache, hasValue } from './logic.js';
+
+    // Published "Ops" sheet CSV — see data/SETUP.md for how this is generated.
+    const OPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=469869102&single=true&output=csv';
+
+    // Distinguishable categorical palette — Belgium's 10 provinces + Brussels-Capital
+    // Region (its own bucket, since store density *in* Brussels is the pattern this
+    // map is meant to reveal) + the two "Luxembourg"s disambiguated per the naming
+    // collision found while preparing the data (a Belgian province vs. the country).
+    const PROVINCE_COLORS = {
+      'Brussels-Capital': '#e6194b',
+      'Namur': '#3cb44b',
+      'Walloon Brabant': '#ffe119',
+      'Liège': '#4363d8',
+      'West Flanders': '#f58231',
+      'Flemish Brabant': '#911eb4',
+      'Limburg': '#42d4f4',
+      'Antwerp': '#f032e6',
+      'East Flanders': '#bfef45',
+      'Grand Duchy of Luxembourg': '#469990',
+      'Hainaut': '#9a6324',
+      'Belgian Luxembourg': '#800000',
+    };
+    const DEFAULT_COLOR = '#666666';
+
+    const banner = document.getElementById('banner');
+    const mapEl = document.getElementById('map');
+    const infoPanel = document.getElementById('info-panel');
+    const infoContent = document.getElementById('info-content');
+    const infoClose = document.getElementById('info-close');
+
+    infoClose.addEventListener('click', () => {
+      infoPanel.hidden = true;
+    });
+
+    function showBanner(message, kind) {
+      banner.textContent = message;
+      banner.className = 'banner banner--' + kind;
+      banner.hidden = false;
+    }
+
+    function hideBanner() {
+      banner.hidden = true;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function fieldRow(label, value) {
+      // Reuses the same hasValue() the Vitest suite verifies against empty
+      // string / whitespace-only / missing key — this is the exact rendering
+      // path the outside-voice review flagged as untested at the UI layer.
+      if (!hasValue(value)) return '';
+      return `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${escapeHtml(value)}</span></div>`;
+    }
+
+    function showStoreInfo(store) {
+      infoContent.innerHTML = `
+        <h2>${escapeHtml(store.name || store.code)}</h2>
+        ${fieldRow('Address', store.address)}
+        ${fieldRow('Hours', store.hours)}
+        ${fieldRow('Phone', store.phone)}
+        ${fieldRow('Manager contact', store.managerContact)}
+        ${fieldRow('Province', store.province)}
+      `;
+      infoPanel.hidden = false;
+    }
+
+    let map;
+    let clusterGroup;
+
+    function initMapIfNeeded() {
+      if (map) return;
+      map = L.map('map').setView([50.6, 4.9], 8); // rough BE/LU center
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
+      clusterGroup = L.markerClusterGroup();
+      map.addLayer(clusterGroup);
+    }
+
+    function renderMap(stores) {
+      initMapIfNeeded();
+      clusterGroup.clearLayers();
+      for (const store of stores) {
+        const color = PROVINCE_COLORS[store.province] || DEFAULT_COLOR;
+        const marker = L.circleMarker([store.lat, store.long], {
+          radius: 8,
+          color: '#222',
+          weight: 1,
+          fillColor: color,
+          fillOpacity: 0.9,
+        });
+        marker.bindTooltip(store.name || store.code);
+        marker.on('click', () => showStoreInfo(store));
+        clusterGroup.addLayer(marker);
+      }
+    }
+
+    function latestUpdatedAt(stores) {
+      let latest = null;
+      for (const s of stores) {
+        if (!s.updatedAt) continue;
+        const d = new Date(s.updatedAt);
+        if (isNaN(d.getTime())) continue;
+        if (!latest || d > latest) latest = d;
+      }
+      return latest;
+    }
+
+    function formatTimestamp(iso) {
+      if (!iso) return 'an unknown time';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return 'an unknown time';
+      return d.toLocaleString();
+    }
+
+    async function fetchOpsData() {
+      try {
+        const response = await fetch(OPS_CSV_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const csvText = await response.text();
+        const { stores, skipped } = parseCSVText(csvText);
+        if (skipped.length) console.warn('Skipped rows while parsing ops data:', skipped);
+
+        const updatedAt = latestUpdatedAt(stores);
+        saveCache(stores, updatedAt ? updatedAt.toISOString() : null);
+
+        renderMap(stores);
+        hideBanner();
+      } catch (err) {
+        console.error('Failed to fetch live store data:', err);
+        const cached = loadCache();
+        if (cached && cached.stores && cached.stores.length) {
+          renderMap(cached.stores);
+          const asOf = cached.updatedAt || cached.cachedAt;
+          showBanner(`Data may be outdated — showing data as of ${formatTimestamp(asOf)}.`, 'stale');
+        } else {
+          showBanner("Couldn't load store data — try refreshing the page.", 'error');
+        }
+      }
+    }
+
+    function boot() {
+      const leafletOk = typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function';
+      const papaOk = typeof Papa !== 'undefined';
+      if (window.__scriptLoadFailed || !leafletOk || !papaOk) {
+        mapEl.innerHTML = '';
+        showBanner('Map failed to load — check your connection (or disable content blockers for this page), then refresh.', 'error');
+        return;
+      }
+      fetchOpsData();
+    }
+
+    boot();
+  </script>
+</body>
+</html>

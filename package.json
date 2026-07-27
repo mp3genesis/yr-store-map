@@ -1,0 +1,13 @@
+{
+  "name": "yr-store-map",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.4",
+    "jsdom": "^25.0.1",
+    "papaparse": "^5.4.1"
+  }
+}
