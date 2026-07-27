@@ -75,10 +75,13 @@ export function parseStores(rows) {
       hours: cleanField(row, 'hours'),
       phone: cleanField(row, 'phone'),
       managerContact: cleanField(row, 'manager_contact'),
+      areaManager: cleanField(row, 'area_manager'),
       updatedAt: cleanField(row, 'updated_at'),
       // Number or null (not a cleanField string) — a raw percentage, can be
       // negative. Drives marker color via getProfitabilityColor().
       profitabilityPct: sanitizeNumber(row.profitability_pct),
+      // Number or null — exact 2025 turnover in euros.
+      ca2025: sanitizeNumber(row.ca_2025),
     });
   }
 

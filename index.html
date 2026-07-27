@@ -89,14 +89,19 @@
 
     function showStoreInfo(store) {
       const profitability = store.profitabilityPct !== null ? `${store.profitabilityPct}%` : null;
+      const ca2025 = store.ca2025 !== null
+        ? `${store.ca2025.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`
+        : null;
       infoContent.innerHTML = `
         <h2>${escapeHtml(store.name || store.code)}</h2>
         ${fieldRow('Address', store.address)}
         ${fieldRow('Hours', store.hours)}
         ${fieldRow('Phone', store.phone)}
         ${fieldRow('Manager contact', store.managerContact)}
+        ${fieldRow('Area Manager', store.areaManager)}
         ${fieldRow('Province', store.province)}
         ${fieldRow('Profitability', profitability)}
+        ${fieldRow('Turnover 2025', ca2025)}
       `;
       infoPanel.hidden = false;
     }

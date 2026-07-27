@@ -1,83 +1,83 @@
-code,name,lat,long,province,address,hours,phone,manager_contact,updated_at,profitability_pct
-001,Ixelles - Chée d'Ixelles,50.836283,4.363063,Brussels-Capital,,,,,,
-004,Namur,50.463334,4.865758,Namur,,,,,,
-006,Wavre,50.715151,4.610607,Walloon Brabant,,,,,,
-009,Verviers,50.592613,5.859758,Liège,,,,,,
-012,Brugge,51.2074,3.2232,West Flanders,,,,,,
-016,Knokke,51.346058,3.288413,West Flanders,,,,,,
-021,Halle,50.73525,4.235931,Flemish Brabant,,,,,,
-030,Hasselt,50.930772,5.337844,Limburg,,,,,,
-038,Etterbeek - Rue des Tongres,50.839586,4.399759,Brussels-Capital,,,,,,
-045,Jette - Place Reine Astrid,50.872607,4.325251,Brussels-Capital,,,,,,
-046,Antwerpen - Abdijstraat,51.18996,4.379091,Antwerp,,,,,,
-057,Leuven,50.879898,4.703174,Flemish Brabant,,,,,,
-058,Etterbeek - La Chasse,50.829874,4.390708,Brussels-Capital,,,,,,
-064,Herstal - Carrefour,50.685863,5.647207,Liège,,,,,,
-068,Bruxelles - City 2,50.853945,4.357454,Brussels-Capital,,,,,,
-069,Anderlecht - Westland,50.838852,4.287594,Brussels-Capital,,,,,,
-070,Zottegem,50.870594,3.810386,East Flanders,,,,,,
-072,Mechelen,51.027322,4.480758,Antwerp,,,,,,
-084,Aalst,50.937436,4.039351,East Flanders,,,,,,
-096,Woluwé-St-Lambert - W Shopping,50.846932,4.438474,Brussels-Capital,,,,,,
-098,Luxembourg - Ville,49.613105,6.128192,Grand Duchy of Luxembourg,,,,,,
-104,Huy,50.520709,5.236207,Liège,,,,,,
-105,Gent - Grootkanonplein,51.057297,3.724314,East Flanders,,,,,,
-106,Brasschaat,51.288799,4.489208,Antwerp,,,,,,
-107,Châtelineau - Cora,50.410086,4.493758,Hainaut,,,,,,
-127,Malmédy,50.425357,6.030695,Liège,,,,,,
-128,Oostende,51.22878,2.920215,West Flanders,,,,,,
-130,Genk - Shopping 1,50.964976,5.503404,Limburg,,,,,,
-134,Woluwe-St-Pierre - Stockel Square,50.841294,4.464001,Brussels-Capital,,,,,,
-139,Visé,50.73524,5.695179,Liège,,,,,,
-144,Binche,50.411156,4.166967,Hainaut,,,,,,
-166,Jodoigne,50.724754,4.871491,Walloon Brabant,,,,,,
-169,Arlon,49.683153,5.81433,Belgian Luxembourg,,,,,,
-170,Wijnegem - Shopping Center,51.22288,4.502659,Antwerp,,,,,,
-174,Rocourt - Cora,50.6686,5.54531,Liège,,,,,,
-175,Uccle - Chée d'Alsemberg,50.803134,4.33682,Brussels-Capital,,,,,,
-176,La Louvière - Cora,50.485928,4.203893,Hainaut,,,,,,
-178,Liège - Belle Ile,50.615651,5.595781,Liège,,,,,,
-179,Marche-en-Famenne,50.226406,5.344954,Belgian Luxembourg,,,,,,
-181,Nivelles - Shopping,50.589725,4.309916,Walloon Brabant,,,,,,
-182,Tournai - Les Bastions,50.60268,3.404601,Hainaut,,,,,,
-183,Messancy - Cora,49.614236,5.812415,Belgian Luxembourg,,,,,,
-185,Hornu - Cora,50.438056,3.838864,Hainaut,,,,,,
-186,Luxembourg - Auchan Kirchberg,49.632781,6.169944,Grand Duchy of Luxembourg,,,,,,
-187,Kuurne - Ring Shopping,50.846019,3.261421,West Flanders,,,,,,
-188,Charleroi - Ville 2,50.417446,4.457329,Hainaut,,,,,,
-191,Gent - Hoornstraat,51.052142,3.721501,East Flanders,,,,,,
-192,Liège cathédrale (Vinave),50.641191,5.57112,Liège,,,,,,
-193,Esch sur Alzette,49.493795,5.981066,Grand Duchy of Luxembourg,,,,,,
-195,Maasmechelen - M2,50.986981,5.702852,Limburg,,,,,,
-196,Luxembourg - Gare,49.60298,6.132833,Grand Duchy of Luxembourg,,,,,,
-198,Mons - Les Grands Prés,50.455982,3.933068,Hainaut,,,,,,
-199,Bruxelles - Rue Neuve,50.850727,4.354121,Brussels-Capital,,,,,,
-200,Bruxelles - Gare du Midi,50.836572,4.336749,Brussels-Capital,,,,,,
-201,Sint-Niklaas - Waasland,51.15348,4.152484,East Flanders,,,,,,
-202,Uccle - Bascule,50.815249,4.367358,Brussels-Capital,,,,,,
-203,Roeselare,50.947403,3.128847,West Flanders,,,,,,
-204,Louvain La Neuve - L'Esplanade,50.671384,4.617584,Walloon Brabant,,,,,,
-206,Auderghem - Carrefour,50.814156,4.425724,Brussels-Capital,,,,,,
-207,Waremme,50.696061,5.252956,Liège,,,,,,
-208,Fléron,50.614491,5.684686,Liège,,,,,,
-209,Antwerpen - Centraal Station,51.216004,4.421438,Antwerp,,,,,,
-212,Ath,50.629551,3.775899,Hainaut,,,,,,
-214,Gerpinnes - Le Bultia,50.344224,4.471438,Hainaut,,,,,,
-215,Antwerpen - Grand Bazar,51.219244,4.402853,Antwerp,,,,,,
-216,Liège - Médiacité,50.635217,5.580553,Liège,,,,,,
-217,Waterloo,50.715927,4.398408,Walloon Brabant,,,,,,
-219,Pommerloch - Knauf Center,49.963356,5.857148,Grand Duchy of Luxembourg,,,,,,
-220,Ninove - NINIA,50.834773,4.019237,East Flanders,,,,,,
-221,Sint-Truiden,50.814407,5.187707,Limburg,,,,,,
-222,Turnhout,51.322369,4.946193,Antwerp,,,,,,
-224,Berchem-Ste-Agathe - Basilix,50.872043,4.292316,Brussels-Capital,,,,,,
-225,Mouscron - Les Dauphins,50.745934,3.235837,Hainaut,,,,,,
-227,Bertrange - Belle Etoile,49.623274,6.049995,Grand Duchy of Luxembourg,,,,,,
-228,Braine L'Alleud,50.684259,4.371278,Walloon Brabant,,,,,,
-229,Heist-Op-Den-Berg,51.07637,4.720676,Antwerp,,,,,,
-230,Lommel,51.2293359,5.3125822,Limburg,,,,,,
-231,Lier,51.131841,4.569185,Antwerp,,,,,,
-232,Diest,50.983461,5.052198,Flemish Brabant,,,,,,
-233,Nieuwpoort,51.146946,2.713233,West Flanders,,,,,,
-235,Docks Bruxsel,50.879894,4.373417,Brussels-Capital,,,,,,
-244,Differdange,49.521791,5.8926,Grand Duchy of Luxembourg,,,,,,
+code,name,lat,long,province,address,hours,phone,manager_contact,area_manager,updated_at,profitability_pct,ca_2025
+001,Ixelles - Chée d'Ixelles,50.836283,4.363063,Brussels-Capital,,,,,Nesiba,,,778953.76
+004,Namur,50.463334,4.865758,Namur,,,,,Aurore,,,1302629.74
+006,Wavre,50.715151,4.610607,Walloon Brabant,,,,,Aurore,,,426414.05
+009,Verviers,50.592613,5.859758,Liège,,,,,Nesiba,,,486887.99
+012,Brugge,51.2074,3.2232,West Flanders,,,,,Els,,,736203.87
+016,Knokke,51.346058,3.288413,West Flanders,,,,,Els,,,250038.51
+021,Halle,50.73525,4.235931,Flemish Brabant,,,,,Simona,,,245119.72
+030,Hasselt,50.930772,5.337844,Limburg,,,,,Simona,,,776717.64
+038,Etterbeek - Rue des Tongres,50.839586,4.399759,Brussels-Capital,,,,,Nesiba,,,356126.6
+045,Jette - Place Reine Astrid,50.872607,4.325251,Brussels-Capital,,,,,Nesiba,,,510901.01
+046,Antwerpen - Abdijstraat,51.18996,4.379091,Antwerp,,,,,Nesiba,,,270944.67
+057,Leuven,50.879898,4.703174,Flemish Brabant,,,,,Simona,,,782322.76
+058,Etterbeek - La Chasse,50.829874,4.390708,Brussels-Capital,,,,,Nesiba,,,311241.95
+064,Herstal - Carrefour,50.685863,5.647207,Liège,,,,,Nesiba,,,348135.04
+068,Bruxelles - City 2,50.853945,4.357454,Brussels-Capital,,,,,Els,,,998001.11
+069,Anderlecht - Westland,50.838852,4.287594,Brussels-Capital,,,,,Nesiba,,,996822.43
+070,Zottegem,50.870594,3.810386,East Flanders,,,,,Els,,,311212.6
+072,Mechelen,51.027322,4.480758,Antwerp,,,,,Simona,,,403894.27
+084,Aalst,50.937436,4.039351,East Flanders,,,,,Els,,,411894.56
+096,Woluwé-St-Lambert - W Shopping,50.846932,4.438474,Brussels-Capital,,,,,Simona,,,828734.32
+098,Luxembourg - Ville,49.613105,6.128192,Grand Duchy of Luxembourg,,,,,Aurore,,,320417.49
+104,Huy,50.520709,5.236207,Liège,,,,,Aurore,,,342488.81
+105,Gent - Grootkanonplein,51.057297,3.724314,East Flanders,,,,,Els,,,659287.78
+106,Brasschaat,51.288799,4.489208,Antwerp,,,,,Simona,,,263111.95
+107,Châtelineau - Cora,50.410086,4.493758,Hainaut,,,,,Savina,,,759041.4
+127,Malmédy,50.425357,6.030695,Liège,,,,,Aurore,,,281425.17
+128,Oostende,51.22878,2.920215,West Flanders,,,,,Els,,,486650.16
+130,Genk - Shopping 1,50.964976,5.503404,Limburg,,,,,Simona,,,509259.34
+134,Woluwe-St-Pierre - Stockel Square,50.841294,4.464001,Brussels-Capital,,,,,Simona,,,415311.15
+139,Visé,50.73524,5.695179,Liège,,,,,Nesiba,,,309941.3
+144,Binche,50.411156,4.166967,Hainaut,,,,,Savina,,,286548.38
+166,Jodoigne,50.724754,4.871491,Walloon Brabant,,,,,Simona,,,270979.49
+169,Arlon,49.683153,5.81433,Belgian Luxembourg,,,,,Aurore,,,294143.8
+170,Wijnegem - Shopping Center,51.22288,4.502659,Antwerp,,,,,Nesiba,,,830611.86
+174,Rocourt - Cora,50.6686,5.54531,Liège,,,,,Nesiba,,,963802.61
+175,Uccle - Chée d'Alsemberg,50.803134,4.33682,Brussels-Capital,,,,,Simona,,,438556.02
+176,La Louvière - Cora,50.485928,4.203893,Hainaut,,,,,Savina,,,858822.22
+178,Liège - Belle Ile,50.615651,5.595781,Liège,,,,,Nesiba,,,1037390.79
+179,Marche-en-Famenne,50.226406,5.344954,Belgian Luxembourg,,,,,Aurore,,,192210.4
+181,Nivelles - Shopping,50.589725,4.309916,Walloon Brabant,,,,,Aurore,,,850488.41
+182,Tournai - Les Bastions,50.60268,3.404601,Hainaut,,,,,Savina,,,1149346.96
+183,Messancy - Cora,49.614236,5.812415,Belgian Luxembourg,,,,,Aurore,,,374331.88
+185,Hornu - Cora,50.438056,3.838864,Hainaut,,,,,Savina,,,601416.44
+186,Luxembourg - Auchan Kirchberg,49.632781,6.169944,Grand Duchy of Luxembourg,,,,,Aurore,,,671470.31
+187,Kuurne - Ring Shopping,50.846019,3.261421,West Flanders,,,,,Els,,,577034.94
+188,Charleroi - Ville 2,50.417446,4.457329,Hainaut,,,,,Savina,,,1308001.22
+191,Gent - Hoornstraat,51.052142,3.721501,East Flanders,,,,,Els,,,449800.0
+192,Liège cathédrale (Vinave),50.641191,5.57112,Liège,,,,,Nesiba,,,813312.87
+193,Esch sur Alzette,49.493795,5.981066,Grand Duchy of Luxembourg,,,,,Aurore,,,487600.61
+195,Maasmechelen - M2,50.986981,5.702852,Limburg,,,,,Simona,,,308723.91
+196,Luxembourg - Gare,49.60298,6.132833,Grand Duchy of Luxembourg,,,,,Aurore,,,562325.31
+198,Mons - Les Grands Prés,50.455982,3.933068,Hainaut,,,,,Savina,,,1069202.83
+199,Bruxelles - Rue Neuve,50.850727,4.354121,Brussels-Capital,,,,,Nesiba,,,1450460.09
+200,Bruxelles - Gare du Midi,50.836572,4.336749,Brussels-Capital,,,,,Els,,,737452.86
+201,Sint-Niklaas - Waasland,51.15348,4.152484,East Flanders,,,,,Els,,,839460.01
+202,Uccle - Bascule,50.815249,4.367358,Brussels-Capital,,,,,Simona,,,260561.05
+203,Roeselare,50.947403,3.128847,West Flanders,,,,,Els,,,342476.6
+204,Louvain La Neuve - L'Esplanade,50.671384,4.617584,Walloon Brabant,,,,,Aurore,,,929852.13
+206,Auderghem - Carrefour,50.814156,4.425724,Brussels-Capital,,,,,Simona,,,338504.75
+207,Waremme,50.696061,5.252956,Liège,,,,,Aurore,,,396839.48
+208,Fléron,50.614491,5.684686,Liège,,,,,Nesiba,,,439743.98
+209,Antwerpen - Centraal Station,51.216004,4.421438,Antwerp,,,,,Nesiba,,,436677.71
+212,Ath,50.629551,3.775899,Hainaut,,,,,Savina,,,392575.09
+214,Gerpinnes - Le Bultia,50.344224,4.471438,Hainaut,,,,,Savina,,,313903.21
+215,Antwerpen - Grand Bazar,51.219244,4.402853,Antwerp,,,,,Nesiba,,,469886.09
+216,Liège - Médiacité,50.635217,5.580553,Liège,,,,,Nesiba,,,513231.3
+217,Waterloo,50.715927,4.398408,Walloon Brabant,,,,,Simona,,,420637.48
+219,Pommerloch - Knauf Center,49.963356,5.857148,Grand Duchy of Luxembourg,,,,,Aurore,,,566246.85
+220,Ninove - NINIA,50.834773,4.019237,East Flanders,,,,,Els,,,323325.84
+221,Sint-Truiden,50.814407,5.187707,Limburg,,,,,Simona,,,269353.96
+222,Turnhout,51.322369,4.946193,Antwerp,,,,,Simona,,,281361.71
+224,Berchem-Ste-Agathe - Basilix,50.872043,4.292316,Brussels-Capital,,,,,Els,,,335984.82
+225,Mouscron - Les Dauphins,50.745934,3.235837,Hainaut,,,,,Savina,,,569271.68
+227,Bertrange - Belle Etoile,49.623274,6.049995,Grand Duchy of Luxembourg,,,,,Aurore,,,438341.9
+228,Braine L'Alleud,50.684259,4.371278,Walloon Brabant,,,,,Savina,,,238899.62
+229,Heist-Op-Den-Berg,51.07637,4.720676,Antwerp,,,,,Simona,,,251863.81
+230,Lommel,51.2293359,5.3125822,Limburg,,,,,Simona,,,248507.65
+231,Lier,51.131841,4.569185,Antwerp,,,,,Simona,,,207835.6
+232,Diest,50.983461,5.052198,Flemish Brabant,,,,,Simona,,,232349.13
+233,Nieuwpoort,51.146946,2.713233,West Flanders,,,,,Els,,,308762.9
+235,Docks Bruxsel,50.879894,4.373417,Brussels-Capital,,,,,Savina,,,800770.64
+244,Differdange,49.521791,5.8926,Grand Duchy of Luxembourg,,,,,Aurore,,,406075.6

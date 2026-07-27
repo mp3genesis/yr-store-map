@@ -83,8 +83,10 @@ describe('parseStores', () => {
         hours: null,
         phone: null,
         managerContact: null,
+        areaManager: null,
         updatedAt: null,
         profitabilityPct: null,
+        ca2025: null,
       },
     ]);
   });
@@ -96,6 +98,14 @@ describe('parseStores', () => {
     ]);
     expect(stores[0].profitabilityPct).toBe(18.5);
     expect(stores[1].profitabilityPct).toBe(-7.2); // comma-decimal sanitized
+  });
+
+  it('parses area_manager as a string and ca_2025 as a number', () => {
+    const { stores } = parseStores([
+      { code: '0001', name: 'Store', lat: '50', long: '4', area_manager: 'Nesiba', ca_2025: '778953.76' },
+    ]);
+    expect(stores[0].areaManager).toBe('Nesiba');
+    expect(stores[0].ca2025).toBe(778953.76);
   });
 
   it('skips a row with a missing code', () => {

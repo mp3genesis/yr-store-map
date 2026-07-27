@@ -75,6 +75,21 @@ colleagues who need performance/sensitive notes.
 Report back what you find (the published CSV URL — needed for T3 — and the
 measured latency) and I'll wire it into `index.html`.
 
+## 6b. New columns: area_manager and ca_2025 (2026-07-27)
+
+Two more columns added to `data/ops-sheet-seed.csv`, filled in from
+`BELGIUM - 202606 - Scorecard_shop.xlsx` (all 82 stores matched by code,
+zero mismatches): `area_manager` (the assigned area manager's first name)
+and `ca_2025` (exact 2025 turnover in euros). Cyril explicitly accepted
+the sensitivity tradeoff on both — a real employee's first name (GDPR,
+same class of concern as `manager_contact`) and an exact per-store revenue
+figure (more precise than the profitability tier already accepted) are
+now going on the **published** Ops sheet.
+
+Your live Ops sheet was created before these columns existed — add
+`area_manager` and `ca_2025` as new columns (any position, `logic.js`
+matches by header name not position) before pasting the updated CSV data.
+
 ## 7. Add the profitability_pct column to your existing Ops tab
 
 Your live Ops sheet was created before this column existed. Add a new
