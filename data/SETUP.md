@@ -90,6 +90,34 @@ Your live Ops sheet was created before these columns existed — add
 `area_manager` and `ca_2025` as new columns (any position, `logic.js`
 matches by header name not position) before pasting the updated CSV data.
 
+## 6c. Prepared (empty) columns for future data (2026-07-27)
+
+Eight more columns added to `data/ops-sheet-seed.csv`, currently empty —
+prepared ahead of time per Cyril's request, so filling them in later needs
+no further code changes:
+
+| Column | Meaning | Type |
+|---|---|---|
+| `ca_2026_target` | 2026 turnover target (€) | number |
+| `ca_2026_actual` | 2026 turnover actual (€) | number |
+| `ca_2027_target` | 2027 turnover target (€) | number |
+| `ca_2027_actual` | 2027 turnover actual (€) | number |
+| `ownership_type` | `FP` (fond propre) / `FR` (franchise partenaire) / `FG` (gérance) | text |
+| `partner_name` | Franchise/gérance partner name | text |
+| `surface_sqm` | Store surface, m² | number |
+| `format_type` | `LAB` (laboratoire) / `ACV` (Atelier cosmétique végétal) | text |
+
+**`partner_name` sensitivity flag, not yet resolved:** this is the same
+class of concern as `manager_contact`/`area_manager` — potentially an
+identifiable person or a named business relationship. It's currently
+empty, so nothing is exposed yet, but when you're ready to fill it in,
+flag it explicitly again before publishing real values (same pattern as
+the other two).
+
+Add these 8 columns to your live Ops sheet whenever convenient — they can
+stay empty for a while with no effect (all render as "not shown" in the
+info panel, same as any other blank field).
+
 ## 7. Add the profitability_pct column to your existing Ops tab
 
 Your live Ops sheet was created before this column existed. Add a new

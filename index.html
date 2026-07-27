@@ -87,11 +87,21 @@
       return `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${escapeHtml(value)}</span></div>`;
     }
 
+    // Explicit 'fr-BE' locale (not the visitor's browser default) so this
+    // always renders as Belgian/French euro formatting — "778 954 €" — not
+    // whatever locale the person viewing the map happens to have set.
+    function formatEUR(value) {
+      if (value === null || value === undefined) return null;
+      return value.toLocaleString('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    }
+
+    function formatSqm(value) {
+      if (value === null || value === undefined) return null;
+      return `${value.toLocaleString('fr-BE')} m²`;
+    }
+
     function showStoreInfo(store) {
       const profitability = store.profitabilityPct !== null ? `${store.profitabilityPct}%` : null;
-      const ca2025 = store.ca2025 !== null
-        ? `${store.ca2025.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`
-        : null;
       infoContent.innerHTML = `
         <h2>${escapeHtml(store.name || store.code)}</h2>
         ${fieldRow('Address', store.address)}
@@ -99,9 +109,17 @@
         ${fieldRow('Phone', store.phone)}
         ${fieldRow('Manager contact', store.managerContact)}
         ${fieldRow('Area Manager', store.areaManager)}
+        ${fieldRow('Ownership type', store.ownershipType)}
+        ${fieldRow('Partner', store.partnerName)}
+        ${fieldRow('Format', store.formatType)}
+        ${fieldRow('Surface', formatSqm(store.surfaceSqm))}
         ${fieldRow('Province', store.province)}
         ${fieldRow('Profitability', profitability)}
-        ${fieldRow('Turnover 2025', ca2025)}
+        ${fieldRow('Turnover 2025', formatEUR(store.ca2025))}
+        ${fieldRow('Turnover 2026 (target)', formatEUR(store.ca2026Target))}
+        ${fieldRow('Turnover 2026 (actual)', formatEUR(store.ca2026Actual))}
+        ${fieldRow('Turnover 2027 (target)', formatEUR(store.ca2027Target))}
+        ${fieldRow('Turnover 2027 (actual)', formatEUR(store.ca2027Actual))}
       `;
       infoPanel.hidden = false;
     }

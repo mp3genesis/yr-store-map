@@ -80,8 +80,22 @@ export function parseStores(rows) {
       // Number or null (not a cleanField string) — a raw percentage, can be
       // negative. Drives marker color via getProfitabilityColor().
       profitabilityPct: sanitizeNumber(row.profitability_pct),
-      // Number or null — exact 2025 turnover in euros.
+      // Numbers or null — turnover in euros, actual and target, 2025-2027.
+      // Only ca_2025 is populated today; the rest are prepared columns.
       ca2025: sanitizeNumber(row.ca_2025),
+      ca2026Target: sanitizeNumber(row.ca_2026_target),
+      ca2026Actual: sanitizeNumber(row.ca_2026_actual),
+      ca2027Target: sanitizeNumber(row.ca_2027_target),
+      ca2027Actual: sanitizeNumber(row.ca_2027_actual),
+      // FP (fond propre) / FR (franchise partenaire) / FG (gérance).
+      ownershipType: cleanField(row, 'ownership_type'),
+      // Franchise/gérance partner name — same GDPR sensitivity class as
+      // manager_contact/area_manager once real data is filled in.
+      partnerName: cleanField(row, 'partner_name'),
+      // Number or null — store surface in square meters.
+      surfaceSqm: sanitizeNumber(row.surface_sqm),
+      // LAB (laboratoire) / ACV (Atelier cosmétique végétal).
+      formatType: cleanField(row, 'format_type'),
     });
   }
 

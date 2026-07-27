@@ -87,6 +87,14 @@ describe('parseStores', () => {
         updatedAt: null,
         profitabilityPct: null,
         ca2025: null,
+        ca2026Target: null,
+        ca2026Actual: null,
+        ca2027Target: null,
+        ca2027Actual: null,
+        ownershipType: null,
+        partnerName: null,
+        surfaceSqm: null,
+        formatType: null,
       },
     ]);
   });
@@ -106,6 +114,25 @@ describe('parseStores', () => {
     ]);
     expect(stores[0].areaManager).toBe('Nesiba');
     expect(stores[0].ca2025).toBe(778953.76);
+  });
+
+  it('parses the prepared 2026/2027 and store-attribute fields', () => {
+    const { stores } = parseStores([{
+      code: '0001', name: 'Store', lat: '50', long: '4',
+      ca_2026_target: '850000', ca_2026_actual: '820000',
+      ca_2027_target: '900000', ca_2027_actual: '',
+      ownership_type: 'FR', partner_name: 'Dupont SA',
+      surface_sqm: '65.5', format_type: 'LAB',
+    }]);
+    const s = stores[0];
+    expect(s.ca2026Target).toBe(850000);
+    expect(s.ca2026Actual).toBe(820000);
+    expect(s.ca2027Target).toBe(900000);
+    expect(s.ca2027Actual).toBeNull(); // empty cell, not yet realized
+    expect(s.ownershipType).toBe('FR');
+    expect(s.partnerName).toBe('Dupont SA');
+    expect(s.surfaceSqm).toBe(65.5);
+    expect(s.formatType).toBe('LAB');
   });
 
   it('skips a row with a missing code', () => {
