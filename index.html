@@ -33,30 +33,25 @@
     onerror="window.__scriptLoadFailed = true"></script>
 
   <script type="module">
-    import { parseCSVText, saveCache, loadCache, hasValue } from './logic.js';
+    import {
+      parseCSVText,
+      parseColorsCSVText,
+      saveCache,
+      loadCache,
+      hasValue,
+      DEFAULT_PROVINCE_COLORS,
+      DEFAULT_MARKER_COLOR,
+    } from './logic.js';
 
     // Published "Ops" sheet CSV — see data/SETUP.md for how this is generated.
     const OPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=469869102&single=true&output=csv';
 
-    // Distinguishable categorical palette — Belgium's 10 provinces + Brussels-Capital
-    // Region (its own bucket, since store density *in* Brussels is the pattern this
-    // map is meant to reveal) + the two "Luxembourg"s disambiguated per the naming
-    // collision found while preparing the data (a Belgian province vs. the country).
-    const PROVINCE_COLORS = {
-      'Brussels-Capital': '#e6194b',
-      'Namur': '#3cb44b',
-      'Walloon Brabant': '#ffe119',
-      'Liège': '#4363d8',
-      'West Flanders': '#f58231',
-      'Flemish Brabant': '#911eb4',
-      'Limburg': '#42d4f4',
-      'Antwerp': '#f032e6',
-      'East Flanders': '#bfef45',
-      'Grand Duchy of Luxembourg': '#469990',
-      'Hainaut': '#9a6324',
-      'Belgian Luxembourg': '#800000',
-    };
-    const DEFAULT_COLOR = '#666666';
+    // Published "ProvinceColors" sheet CSV — lets colors be changed from the
+    // Sheet without touching code. Placeholder until that tab is created and
+    // published (see data/SETUP.md); until then this fetch just fails and the
+    // map falls back to DEFAULT_PROVINCE_COLORS below, which is fine — colors
+    // are cosmetic, not a load-bearing failure mode like the ops data is.
+    const PROVINCE_COLORS_URL = 'PLACEHOLDER_PROVINCE_COLORS_URL';
 
     const banner = document.getElementById('banner');
     const mapEl = document.getElementById('map');
@@ -104,6 +99,29 @@
       infoPanel.hidden = false;
     }
 
+    // Starts as the hardcoded defaults; fetchProvinceColors() overrides
+    // entries found in the published ProvinceColors sheet. Any province not
+    // present there (sheet not created yet, fetch failed, typo) keeps its
+    // default — colors are cosmetic, so a fetch failure here degrades
+    // gracefully instead of blocking the map like the ops-data fetch does.
+    let provinceColors = { ...DEFAULT_PROVINCE_COLORS };
+
+    async function fetchProvinceColors() {
+      if (!PROVINCE_COLORS_URL || PROVINCE_COLORS_URL.startsWith('PLACEHOLDER')) {
+        return; // sheet not set up yet — keep defaults, no error needed
+      }
+      try {
+        const response = await fetch(PROVINCE_COLORS_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const csvText = await response.text();
+        const { colors, skipped } = parseColorsCSVText(csvText);
+        if (skipped.length) console.warn('Skipped rows while parsing province colors:', skipped);
+        provinceColors = { ...DEFAULT_PROVINCE_COLORS, ...colors };
+      } catch (err) {
+        console.warn('Failed to fetch province colors, using defaults:', err);
+      }
+    }
+
     let map;
     let clusterGroup;
 
@@ -122,7 +140,7 @@
       initMapIfNeeded();
       clusterGroup.clearLayers();
       for (const store of stores) {
-        const color = PROVINCE_COLORS[store.province] || DEFAULT_COLOR;
+        const color = provinceColors[store.province] || DEFAULT_MARKER_COLOR;
         const marker = L.circleMarker([store.lat, store.long], {
           radius: 8,
           color: '#222',
@@ -180,7 +198,7 @@
       }
     }
 
-    function boot() {
+    async function boot() {
       const leafletOk = typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function';
       const papaOk = typeof Papa !== 'undefined';
       if (window.__scriptLoadFailed || !leafletOk || !papaOk) {
@@ -188,6 +206,7 @@
         showBanner('Map failed to load — check your connection (or disable content blockers for this page), then refresh.', 'error');
         return;
       }
+      await fetchProvinceColors(); // best-effort, never blocks on failure
       fetchOpsData();
     }
 

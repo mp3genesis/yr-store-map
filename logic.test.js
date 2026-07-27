@@ -7,6 +7,10 @@ import {
   parseCSVText,
   saveCache,
   loadCache,
+  isValidHexColor,
+  parseProvinceColors,
+  parseColorsCSVText,
+  DEFAULT_PROVINCE_COLORS,
 } from './logic.js';
 
 describe('sanitizeCoordinate', () => {
@@ -129,6 +133,76 @@ describe('parseCSVText (PapaParse integration)', () => {
 
   it('throws a clear error if no PapaParse implementation is available', () => {
     expect(() => parseCSVText('code,name\n0001,Test\n', undefined)).toThrow(/PapaParse not available/);
+  });
+});
+
+describe('isValidHexColor', () => {
+  it('accepts 6-digit and 3-digit hex', () => {
+    expect(isValidHexColor('#e6194b')).toBe(true);
+    expect(isValidHexColor('#abc')).toBe(true);
+  });
+
+  it('accepts 8-digit and 4-digit hex (with alpha)', () => {
+    expect(isValidHexColor('#e6194bff')).toBe(true);
+    expect(isValidHexColor('#abcd')).toBe(true);
+  });
+
+  it('rejects non-hex strings, named colors, and malformed values', () => {
+    expect(isValidHexColor('red')).toBe(false);
+    expect(isValidHexColor('e6194b')).toBe(false); // missing #
+    expect(isValidHexColor('#zzzzzz')).toBe(false);
+    expect(isValidHexColor('#12345')).toBe(false); // wrong length
+    expect(isValidHexColor('')).toBe(false);
+    expect(isValidHexColor(null)).toBe(false);
+    expect(isValidHexColor(undefined)).toBe(false);
+  });
+});
+
+describe('parseProvinceColors', () => {
+  it('builds a province-to-color map from well-formed rows', () => {
+    const { colors, skipped } = parseProvinceColors([
+      { province: 'Namur', color: '#3cb44b' },
+      { province: 'Hainaut', color: '#9a6324' },
+    ]);
+    expect(skipped).toHaveLength(0);
+    expect(colors).toEqual({ Namur: '#3cb44b', Hainaut: '#9a6324' });
+  });
+
+  it('skips a row with a missing province', () => {
+    const { colors, skipped } = parseProvinceColors([{ color: '#3cb44b' }]);
+    expect(colors).toEqual({});
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0].reason).toBe('missing province');
+  });
+
+  it('skips a row with a missing or invalid color, rather than breaking rendering', () => {
+    const { colors, skipped } = parseProvinceColors([
+      { province: 'Namur', color: '' },
+      { province: 'Hainaut', color: 'not-a-color' },
+    ]);
+    expect(colors).toEqual({});
+    expect(skipped).toHaveLength(2);
+  });
+
+  it('handles an empty row list without crashing', () => {
+    expect(parseProvinceColors([])).toEqual({ colors: {}, skipped: [] });
+    expect(parseProvinceColors(undefined)).toEqual({ colors: {}, skipped: [] });
+  });
+});
+
+describe('parseColorsCSVText (PapaParse integration)', () => {
+  it('parses real CSV text end to end', () => {
+    const csv = 'province,color\nNamur,#3cb44b\nHainaut,#9a6324\n';
+    const { colors, skipped } = parseColorsCSVText(csv, Papa);
+    expect(skipped).toHaveLength(0);
+    expect(colors).toEqual({ Namur: '#3cb44b', Hainaut: '#9a6324' });
+  });
+
+  it('every DEFAULT_PROVINCE_COLORS entry is itself a valid hex color', () => {
+    // Guards against a typo in the fallback palette breaking rendering silently.
+    for (const [province, color] of Object.entries(DEFAULT_PROVINCE_COLORS)) {
+      expect(isValidHexColor(color), `${province}: ${color}`).toBe(true);
+    }
   });
 });
 

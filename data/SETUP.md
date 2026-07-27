@@ -74,3 +74,21 @@ colleagues who need performance/sensitive notes.
 
 Report back what you find (the published CSV URL — needed for T3 — and the
 measured latency) and I'll wire it into `index.html`.
+
+## 7. ProvinceColors tab (lets you change map colors without touching code)
+
+1. Add a third tab, rename it to `ProvinceColors`.
+2. File > Import > Upload `data/province-colors-seed.csv` into that tab
+   (same "replace current sheet" import). This seeds the 12 provinces with
+   the current map colors as a starting point — edit the `color` column
+   (any CSS hex color: `#rgb`, `#rrggbb`, or with alpha `#rrggbbaa`) to
+   change what shows up on the map. Province names must match the `Ops`
+   tab exactly (case-sensitive) or the color won't apply — a typo just
+   falls back to the default color for that province, it won't break
+   anything.
+3. File > Share > Publish to web > select the `ProvinceColors` tab >
+   format CSV > Publish. Copy the URL.
+
+Send me that URL and I'll drop it into `PROVINCE_COLORS_URL` in
+`index.html`. Until then the map just uses the hardcoded defaults — nothing
+breaks, this whole feature degrades gracefully if skipped.

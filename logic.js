@@ -86,6 +86,68 @@ export function parseCSVText(csvText, PapaLib = (typeof Papa !== 'undefined' ? P
   return parseStores(parsed.data);
 }
 
+// Fallback palette, used whenever the ProvinceColors sheet is unavailable or
+// missing an entry for a given province. Also the starting point seeded into
+// that sheet — see data/province-colors-seed.csv.
+export const DEFAULT_PROVINCE_COLORS = {
+  'Brussels-Capital': '#e6194b',
+  'Namur': '#3cb44b',
+  'Walloon Brabant': '#ffe119',
+  'Liège': '#4363d8',
+  'West Flanders': '#f58231',
+  'Flemish Brabant': '#911eb4',
+  'Limburg': '#42d4f4',
+  'Antwerp': '#f032e6',
+  'East Flanders': '#bfef45',
+  'Grand Duchy of Luxembourg': '#469990',
+  'Hainaut': '#9a6324',
+  'Belgian Luxembourg': '#800000',
+};
+export const DEFAULT_MARKER_COLOR = '#666666';
+
+// Accepts #rgb, #rgba, #rrggbb, #rrggbbaa — anything a browser can use
+// directly as a CSS color. Deliberately permissive about case.
+export function isValidHexColor(value) {
+  return typeof value === 'string' && /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+}
+
+// Turns raw ProvinceColors rows into a { province: color } map. A row with
+// a missing province, or a color that isn't valid CSS hex, is skipped rather
+// than allowed to silently break rendering with an invalid color — callers
+// fall back to DEFAULT_PROVINCE_COLORS for any province missing from the
+// result (sheet not created yet, fetch failed, typo'd province name, etc).
+export function parseProvinceColors(rows) {
+  const colors = {};
+  const skipped = [];
+
+  for (const row of rows || []) {
+    const province = cleanField(row, 'province');
+    if (!province) {
+      skipped.push({ row, reason: 'missing province' });
+      continue;
+    }
+    const color = cleanField(row, 'color');
+    if (!color || !isValidHexColor(color)) {
+      skipped.push({ row, reason: `invalid color: ${JSON.stringify(row.color)}` });
+      continue;
+    }
+    colors[province] = color.trim();
+  }
+
+  return { colors, skipped };
+}
+
+// Parses raw ProvinceColors CSV text the same way parseCSVText does for
+// store data. Same PapaLib injection pattern (global Papa in production,
+// explicit package in tests).
+export function parseColorsCSVText(csvText, PapaLib = (typeof Papa !== 'undefined' ? Papa : undefined)) {
+  if (!PapaLib) {
+    throw new Error('parseColorsCSVText: PapaParse not available (pass PapaLib explicitly, or load it via <script> before this file runs)');
+  }
+  const parsed = PapaLib.parse(csvText, { header: true, skipEmptyLines: true });
+  return parseProvinceColors(parsed.data);
+}
+
 // Persists the last successfully fetched store list. Fails silently
 // (returns false) if localStorage is unavailable or full — the caller
 // decides what that means for the UI, this function just doesn't throw.
