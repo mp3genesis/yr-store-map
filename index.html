@@ -47,12 +47,11 @@
     const OPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=469869102&single=true&output=csv';
 
     // Published "ProfitabilityTiers" sheet CSV — lets the thresholds and
-    // colors be changed from the Sheet without touching code. Placeholder
-    // until that tab is created and published (see data/SETUP.md); until
-    // then this fetch just fails and the map falls back to
-    // DEFAULT_PROFITABILITY_TIERS below, which is fine — this is cosmetic,
-    // not a load-bearing failure mode like the ops data is.
-    const PROFITABILITY_TIERS_URL = 'PLACEHOLDER_PROFITABILITY_TIERS_URL';
+    // colors be changed from the Sheet without touching code. If this ever
+    // fails to fetch, the map falls back to DEFAULT_PROFITABILITY_TIERS,
+    // which is fine — this is cosmetic, not a load-bearing failure mode
+    // like the ops data is.
+    const PROFITABILITY_TIERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=892996556&single=true&output=csv';
 
     const banner = document.getElementById('banner');
     const mapEl = document.getElementById('map');
