@@ -74,8 +74,13 @@ export function parseStores(rows) {
       address: cleanField(row, 'address'),
       hours: cleanField(row, 'hours'),
       phone: cleanField(row, 'phone'),
-      managerContact: cleanField(row, 'manager_contact'),
-      areaManager: cleanField(row, 'area_manager'),
+      // "Directeur" replaces the old manager_contact column (a duplicate
+      // "Director" column was dropped per Cyril's choice — kept the French
+      // name). Same GDPR sensitivity class, still empty/gated in practice.
+      managerContact: cleanField(row, 'Directeur'),
+      // "Regional_Sector" is the live sheet's current name for what used
+      // to be area_manager — same data (verified: same names, same rows).
+      areaManager: cleanField(row, 'Regional_Sector'),
       updatedAt: cleanField(row, 'updated_at'),
       // Number or null (not a cleanField string) — a raw percentage, can be
       // negative. Drives marker color via getProfitabilityColor().
@@ -88,14 +93,20 @@ export function parseStores(rows) {
       ca2027Target: sanitizeNumber(row.ca_2027_target),
       ca2027Actual: sanitizeNumber(row.ca_2027_actual),
       // FP (fond propre) / FR (franchise partenaire) / FG (gérance).
-      ownershipType: cleanField(row, 'ownership_type'),
+      // Column is "Ownership_Type" on the live sheet (capitalized).
+      ownershipType: cleanField(row, 'Ownership_Type'),
       // Franchise/gérance partner name — same GDPR sensitivity class as
-      // manager_contact/area_manager once real data is filled in.
-      partnerName: cleanField(row, 'partner_name'),
-      // Number or null — store surface in square meters.
-      surfaceSqm: sanitizeNumber(row.surface_sqm),
+      // managerContact/areaManager once real data is filled in. Column is
+      // "Partner_name" on the live sheet (capitalized).
+      partnerName: cleanField(row, 'Partner_name'),
+      // Number or null — store surface in square meters. Column is
+      // "Surface_sqm" on the live sheet (capitalized).
+      surfaceSqm: sanitizeNumber(row.Surface_sqm),
       // LAB (laboratoire) / ACV (Atelier cosmétique végétal).
       formatType: cleanField(row, 'format_type'),
+      // Whether the store has an "Institut" (beauty institute service).
+      // Added directly on the live sheet by Cyril — free text/flag for now.
+      presenceInstitut: cleanField(row, 'Presence_Institut'),
     });
   }
 

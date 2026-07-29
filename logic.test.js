@@ -95,6 +95,7 @@ describe('parseStores', () => {
         partnerName: null,
         surfaceSqm: null,
         formatType: null,
+        presenceInstitut: null,
       },
     ]);
   });
@@ -108,21 +109,35 @@ describe('parseStores', () => {
     expect(stores[1].profitabilityPct).toBe(-7.2); // comma-decimal sanitized
   });
 
-  it('parses area_manager as a string and ca_2025 as a number', () => {
+  it('parses Regional_Sector (area manager) as a string and ca_2025 as a number', () => {
     const { stores } = parseStores([
-      { code: '0001', name: 'Store', lat: '50', long: '4', area_manager: 'Nesiba', ca_2025: '778953.76' },
+      { code: '0001', name: 'Store', lat: '50', long: '4', Regional_Sector: 'Nesiba', ca_2025: '778953.76' },
     ]);
     expect(stores[0].areaManager).toBe('Nesiba');
     expect(stores[0].ca2025).toBe(778953.76);
   });
 
-  it('parses the prepared 2026/2027 and store-attribute fields', () => {
+  it('parses Directeur as managerContact (live sheet renamed manager_contact)', () => {
+    const { stores } = parseStores([
+      { code: '0001', name: 'Store', lat: '50', long: '4', Directeur: 'Jean Dupont' },
+    ]);
+    expect(stores[0].managerContact).toBe('Jean Dupont');
+  });
+
+  it('parses Presence_Institut', () => {
+    const { stores } = parseStores([
+      { code: '0001', name: 'Store', lat: '50', long: '4', Presence_Institut: 'Yes' },
+    ]);
+    expect(stores[0].presenceInstitut).toBe('Yes');
+  });
+
+  it('parses the prepared 2026/2027 and store-attribute fields (Ownership_Type/Partner_name/Surface_sqm are capitalized on the live sheet)', () => {
     const { stores } = parseStores([{
       code: '0001', name: 'Store', lat: '50', long: '4',
       ca_2026_target: '850000', ca_2026_actual: '820000',
       ca_2027_target: '900000', ca_2027_actual: '',
-      ownership_type: 'FR', partner_name: 'Dupont SA',
-      surface_sqm: '65.5', format_type: 'LAB',
+      Ownership_Type: 'FR', Partner_name: 'Dupont SA',
+      Surface_sqm: '65.5', format_type: 'LAB',
     }]);
     const s = stores[0];
     expect(s.ca2026Target).toBe(850000);

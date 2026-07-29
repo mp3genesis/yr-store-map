@@ -4,6 +4,20 @@ I generated the data files; these steps need your Google account and are quick
 (~10-15 min total). Everything below implements the "Data Sensitivity Split"
 from the design doc.
 
+## 0. Sync note (2026-07-27)
+
+You've been editing the live Ops sheet directly since these steps were first
+written (real addresses filled in, columns renamed/added). `logic.js` and
+`data/ops-sheet-seed.csv` were resynced to match the live sheet's actual
+current column names — some are capitalized differently than the original
+plan below (`Ownership_Type`, `Partner_name`, `Surface_sqm`, not the
+lowercase names in earlier steps), `area_manager` is now `Regional_Sector`,
+`manager_contact` is now `Directeur` (a duplicate `Director` column was
+dropped, per your choice), and a new `Presence_Institut` column was added
+by you directly. The steps below are kept for historical context — trust
+this note and the actual live sheet over the older step-by-step column
+names where they conflict.
+
 ## 1. Create the Sheet
 
 1. Create a new Google Sheet — e.g. "YR Store Map - Data".
