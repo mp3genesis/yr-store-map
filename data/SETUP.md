@@ -4,6 +4,20 @@ I generated the data files; these steps need your Google account and are quick
 (~10-15 min total). Everything below implements the "Data Sensitivity Split"
 from the design doc.
 
+## 0b. Data refresh from weekly reporting (2026-07-29)
+
+Merged from `Reporting Hebdo BNL - S31 new.xlsx`: `Regional_Sector` (RS,
+18 stores reassigned), `Ownership_Type` (Statut: FP/FRO/FR — filled for
+all stores, not FP/FR/FG as originally assumed), and `Presence_Institut`
+(derived as Yes/No from the "CA INSTITUTS" column being >0 — 23 stores
+have one). **Halle (code 021) removed** — the report marked it "Fermé"
+(closed), confirmed by Cyril. Down to 81 active stores.
+
+You'll need to make the same changes on the live Sheet: delete row 021,
+and update `Regional_Sector`/`Ownership_Type`/`Presence_Institut` for the
+remaining 81 rows from `data/ops-sheet-seed.csv` (now the source of truth
+for this refresh).
+
 ## 0. Sync note (2026-07-27)
 
 You've been editing the live Ops sheet directly since these steps were first
