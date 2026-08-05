@@ -1,4 +1,4 @@
-code,name,lat,long,province,address,hours,phone,Directeur,Regional_Sector,profitability_pct,ca_2025,ca_2026_target,ca_2026_actual,ca_2027_target,ca_2027_actual,Ownership_Type,Partner_name,Surface_sqm,format_type,Presence_Institut,updated_at
+﻿code,name,lat,long,province,address,hours,phone,Directeur,Regional_Sector,profitability_pct,ca_2025,ca_2026_target,ca_2026_actual,ca_2027_target,ca_2027_actual,Ownership_Type,Partner_name,Surface_sqm,format_type,Presence_Institut,updated_at
 001,Ixelles - Chée d'Ixelles,50.836283,4.363063,Brussels-Capital,"Chau. d'Ixelles 74, 1050 Ixelles, Belgium",,,,Nesiba Omerovic,,778953.76,,,,,FRO,,,,No,
 004,Namur,50.463334,4.865758,Namur,"Rue de l'Ange 27-29-31, 5000 Namur, Belgium",,,,Aurore Vandamme,,1302629.74,,,,,FRO,,,,No,
 006,Wavre,50.715151,4.610607,Walloon Brabant,"Rue du Pont du Christ 3, 1300 Wavre, Belgium",,,,Aurore Vandamme,,426414.05,,,,,FRO,,,,No,
