@@ -2,3 +2,4 @@ node_modules/
 dist/
 .gstack/
 data/YR Store Map.xlsx
+data/restricted-sheet-seed.csv

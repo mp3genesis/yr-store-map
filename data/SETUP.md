@@ -1,5 +1,22 @@
 # T2 setup steps (Google Sheets — manual, tied to your Google account)
 
+## 0c. Filled the Restricted sheet — do NOT commit this file (2026-07-29)
+
+`data/restricted-sheet-seed.csv` is now populated with real content from
+`Connaissance_YvesRocher.md`: `performance_notes` for 19 struggling stores
+(the "Groupe A/B" loss/high-fixed-cost list — figures, action plans) and
+`other_sensitive_notes` for 4 stores with an interrupted franchise
+cooperation (brand standards non-compliance).
+
+**This file is git-ignored and was removed from tracking** — the
+`yr-store-map` GitHub repo is **public**, and this content should never
+enter git history (even though the live map never fetches this sheet,
+anyone can browse a public repo's files directly). Copy this file's
+content into the **Restricted tab** of your Google Sheet yourself
+(normal Google Sheets sharing, not "publish to web" — see step 5 below
+for why that distinction matters). If you ever need to share this file
+with me again, don't put it in this git-tracked project folder.
+
 I generated the data files; these steps need your Google account and are quick
 (~10-15 min total). Everything below implements the "Data Sensitivity Split"
 from the design doc.
