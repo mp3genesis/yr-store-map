@@ -47,6 +47,27 @@ describe('sanitizeNumber', () => {
     expect(sanitizeNumber('20')).toBe(20);
     expect(sanitizeNumber('0')).toBe(0);
   });
+
+  it('strips a euro symbol and thousands-comma grouping (Sheets currency-format export)', () => {
+    expect(sanitizeNumber('€778,954')).toBe(778954);
+    expect(sanitizeNumber('€1,302,630')).toBe(1302630);
+  });
+
+  it('strips a percent sign', () => {
+    expect(sanitizeNumber('12%')).toBe(12);
+    expect(sanitizeNumber('-7%')).toBe(-7);
+  });
+
+  it('disambiguates a single comma by digit count: 3 digits = thousands, 1-2 digits = decimal', () => {
+    expect(sanitizeNumber('778,954')).toBe(778954); // 3 digits after comma -> thousands
+    expect(sanitizeNumber('50,85')).toBe(50.85); // 2 digits -> decimal
+    expect(sanitizeNumber('-7,2')).toBe(-7.2); // 1 digit -> decimal
+  });
+
+  it('when both comma and dot are present, the last one is the decimal separator', () => {
+    expect(sanitizeNumber('1,302,630.50')).toBe(1302630.5); // US style
+    expect(sanitizeNumber('1.302.630,50')).toBe(1302630.5); // EU style
+  });
 });
 
 describe('hasValue', () => {
@@ -69,7 +90,7 @@ describe('hasValue', () => {
 describe('parseStores', () => {
   it('includes a well-formed row', () => {
     const { stores, skipped } = parseStores([
-      { code: '0001', name: 'Ixelles', lat: '50.836283', long: '4.363063', province: 'Brussels-Capital' },
+      { code: '0001', Nom: 'Ixelles', lat: '50.836283', long: '4.363063', Province: 'Brussels-Capital' },
     ]);
     expect(skipped).toHaveLength(0);
     expect(stores).toEqual([
@@ -100,44 +121,44 @@ describe('parseStores', () => {
     ]);
   });
 
-  it('parses profitability_pct as a number, including negative values', () => {
+  it('parses "Profitabilité (Marge Nette)" as a number, including negative values', () => {
     const { stores } = parseStores([
-      { code: '0001', name: 'Profitable', lat: '50', long: '4', profitability_pct: '18.5' },
-      { code: '0002', name: 'Loss', lat: '50', long: '4', profitability_pct: '-7,2' },
+      { code: '0001', Nom: 'Profitable', lat: '50', long: '4', 'Profitabilité (Marge Nette)': '18.5' },
+      { code: '0002', Nom: 'Loss', lat: '50', long: '4', 'Profitabilité (Marge Nette)': '-7,2' },
     ]);
     expect(stores[0].profitabilityPct).toBe(18.5);
     expect(stores[1].profitabilityPct).toBe(-7.2); // comma-decimal sanitized
   });
 
-  it('parses Regional_Sector (area manager) as a string and ca_2025 as a number', () => {
+  it('parses "Responsable Secteur" (area manager) as a string and CA_2025 as a number, including currency-formatted export', () => {
     const { stores } = parseStores([
-      { code: '0001', name: 'Store', lat: '50', long: '4', Regional_Sector: 'Nesiba', ca_2025: '778953.76' },
+      { code: '0001', Nom: 'Store', lat: '50', long: '4', 'Responsable Secteur': 'Nesiba Omerovic', CA_2025: '€778,954' },
     ]);
-    expect(stores[0].areaManager).toBe('Nesiba');
-    expect(stores[0].ca2025).toBe(778953.76);
+    expect(stores[0].areaManager).toBe('Nesiba Omerovic');
+    expect(stores[0].ca2025).toBe(778954);
   });
 
-  it('parses Directeur as managerContact (live sheet renamed manager_contact)', () => {
+  it('parses Directeur as managerContact', () => {
     const { stores } = parseStores([
-      { code: '0001', name: 'Store', lat: '50', long: '4', Directeur: 'Jean Dupont' },
+      { code: '0001', Nom: 'Store', lat: '50', long: '4', Directeur: 'Jean Dupont' },
     ]);
     expect(stores[0].managerContact).toBe('Jean Dupont');
   });
 
-  it('parses Presence_Institut', () => {
+  it('parses Institut as presenceInstitut', () => {
     const { stores } = parseStores([
-      { code: '0001', name: 'Store', lat: '50', long: '4', Presence_Institut: 'Yes' },
+      { code: '0001', Nom: 'Store', lat: '50', long: '4', Institut: 'Yes' },
     ]);
     expect(stores[0].presenceInstitut).toBe('Yes');
   });
 
-  it('parses the prepared 2026/2027 and store-attribute fields (Ownership_Type/Partner_name/Surface_sqm are capitalized on the live sheet)', () => {
+  it('parses the prepared 2026/2027 and store-attribute fields (live sheet current French headers)', () => {
     const { stores } = parseStores([{
-      code: '0001', name: 'Store', lat: '50', long: '4',
-      ca_2026_target: '850000', ca_2026_actual: '820000',
-      ca_2027_target: '900000', ca_2027_actual: '',
-      Ownership_Type: 'FR', Partner_name: 'Dupont SA',
-      Surface_sqm: '65.5', format_type: 'LAB',
+      code: '0001', Nom: 'Store', lat: '50', long: '4',
+      CA_2026_target: '850000', CA_2026_actual: '820000',
+      CA_2027_target: '900000', CA_2027_actual: '',
+      'Type Gestion': 'FR', 'Nom du partenaire': 'Dupont SA',
+      'Surface m²': '65.5', 'Type de format': 'LAB',
     }]);
     const s = stores[0];
     expect(s.ca2026Target).toBe(850000);
@@ -168,15 +189,15 @@ describe('parseStores', () => {
   });
 
   it('sanitizes comma-decimal coordinates inline', () => {
-    const { stores } = parseStores([{ code: '0001', name: 'Comma', lat: '50,85', long: '4,36' }]);
+    const { stores } = parseStores([{ code: '0001', Nom: 'Comma', lat: '50,85', long: '4,36' }]);
     expect(stores[0].lat).toBe(50.85);
     expect(stores[0].long).toBe(4.36);
   });
 
   it('skips a duplicate code, keeping the first occurrence', () => {
     const { stores, skipped } = parseStores([
-      { code: '0001', name: 'First', lat: '50', long: '4' },
-      { code: '0001', name: 'Second (dup)', lat: '51', long: '5' },
+      { code: '0001', Nom: 'First', lat: '50', long: '4' },
+      { code: '0001', Nom: 'Second (dup)', lat: '51', long: '5' },
     ]);
     expect(stores).toHaveLength(1);
     expect(stores[0].name).toBe('First');
@@ -191,7 +212,7 @@ describe('parseStores', () => {
 
   it('renders partial fields as null, distinguishing empty string, whitespace, and missing key', () => {
     const { stores } = parseStores([
-      { code: '0001', name: 'Partial', lat: '50', long: '4', address: '', hours: '   ', phone: undefined },
+      { code: '0001', Nom: 'Partial', lat: '50', long: '4', Adresse: '', Heure: '   ', Téléphone: undefined },
     ]);
     expect(stores[0].address).toBeNull();
     expect(stores[0].hours).toBeNull();
@@ -201,7 +222,7 @@ describe('parseStores', () => {
 
 describe('parseCSVText (PapaParse integration)', () => {
   it('parses real CSV text end to end, including a free-text field containing a comma', () => {
-    const csv = 'code,name,lat,long,address\n0001,"Ixelles - Chée d\'Ixelles",50.836283,4.363063,"Rue A, 12"\n';
+    const csv = 'code,Nom,lat,long,Adresse\n0001,"Ixelles - Chée d\'Ixelles",50.836283,4.363063,"Rue A, 12"\n';
     const { stores, skipped } = parseCSVText(csv, Papa);
     expect(skipped).toHaveLength(0);
     expect(stores).toHaveLength(1);

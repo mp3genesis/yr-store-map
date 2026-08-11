@@ -8,16 +8,45 @@
 
 const CACHE_KEY = 'yr-store-map:cache:v1';
 
-// Generic numeric parser handling Google Sheets' locale-dependent comma
-// decimal separator (e.g. "50,85" or "-5,5"). Returns null for anything
-// that doesn't parse to a finite number. Used for coordinates and for the
-// profitability percentage — same locale risk either way.
+// Generic numeric parser. Handles two distinct comma risks that both show
+// up in this Sheet: a locale decimal separator (e.g. "50,85" coordinates,
+// "-5,5" profitability) and a thousands grouping separator once a cell
+// picks up currency formatting on export (e.g. "€778,954", "€1,302,630" —
+// Google Sheets can convert a currency-formatted number cell to its
+// display text on CSV export). Also strips currency symbols and "%".
+// Returns null for anything that doesn't parse to a finite number.
 export function sanitizeNumber(raw) {
   if (raw === null || raw === undefined) return null;
-  const str = String(raw).trim();
+  let str = String(raw).trim();
   if (str === '') return null;
-  const normalized = str.replace(',', '.');
-  const value = parseFloat(normalized);
+
+  // Strip currency symbols, percent signs, and any whitespace (including
+  // the non-breaking space Sheets sometimes uses as a thousands separator).
+  str = str.replace(/[€$£%\s ]/g, '');
+  if (str === '') return null;
+
+  const hasComma = str.includes(',');
+  const hasDot = str.includes('.');
+
+  if (hasComma && hasDot) {
+    // Whichever separator appears last is the decimal point; the other is
+    // thousands grouping to strip (e.g. "1.302,63" vs "1,302.63").
+    if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      str = str.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    // Multiple commas, or a single comma followed by exactly 3 digits,
+    // reads as thousands grouping ("778,954", "1,302,630"). A single comma
+    // followed by 1-2 digits is a decimal separator ("50,85", "-7,2").
+    const parts = str.split(',');
+    const looksLikeThousands = parts.length > 2
+      || (parts.length === 2 && parts[1].length === 3);
+    str = looksLikeThousands ? str.replace(/,/g, '') : str.replace(',', '.');
+  }
+
+  const value = parseFloat(str);
   return Number.isFinite(value) ? value : null;
 }
 
@@ -69,44 +98,41 @@ export function parseStores(rows) {
       code,
       lat,
       long,
-      name: cleanField(row, 'name'),
-      province: cleanField(row, 'province'),
-      address: cleanField(row, 'address'),
-      hours: cleanField(row, 'hours'),
-      phone: cleanField(row, 'phone'),
-      // "Directeur" replaces the old manager_contact column (a duplicate
-      // "Director" column was dropped per Cyril's choice — kept the French
-      // name). Same GDPR sensitivity class, still empty/gated in practice.
+      name: cleanField(row, 'Nom'),
+      province: cleanField(row, 'Province'),
+      address: cleanField(row, 'Adresse'),
+      hours: cleanField(row, 'Heure'),
+      phone: cleanField(row, 'Téléphone'),
+      // Same GDPR sensitivity class as before, still empty/gated in practice.
       managerContact: cleanField(row, 'Directeur'),
-      // "Regional_Sector" is the live sheet's current name for what used
-      // to be area_manager — same data (verified: same names, same rows).
-      areaManager: cleanField(row, 'Regional_Sector'),
-      updatedAt: cleanField(row, 'updated_at'),
+      // "Responsable Secteur" is the live sheet's current name for what
+      // used to be area_manager / Regional_Sector.
+      areaManager: cleanField(row, 'Responsable Secteur'),
+      updatedAt: cleanField(row, 'Mise à jour le'),
       // Number or null (not a cleanField string) — a raw percentage, can be
       // negative. Drives marker color via getProfitabilityColor().
-      profitabilityPct: sanitizeNumber(row.profitability_pct),
+      profitabilityPct: sanitizeNumber(row['Profitabilité (Marge Nette)']),
       // Numbers or null — turnover in euros, actual and target, 2025-2027.
-      // Only ca_2025 is populated today; the rest are prepared columns.
-      ca2025: sanitizeNumber(row.ca_2025),
-      ca2026Target: sanitizeNumber(row.ca_2026_target),
-      ca2026Actual: sanitizeNumber(row.ca_2026_actual),
-      ca2027Target: sanitizeNumber(row.ca_2027_target),
-      ca2027Actual: sanitizeNumber(row.ca_2027_actual),
-      // FP (fond propre) / FR (franchise partenaire) / FG (gérance).
-      // Column is "Ownership_Type" on the live sheet (capitalized).
-      ownershipType: cleanField(row, 'Ownership_Type'),
+      // ca_2025 can arrive as a currency-formatted string (e.g. "€778,954")
+      // if the Sheet cell picked up currency formatting — sanitizeNumber
+      // strips the symbol and thousands grouping either way.
+      ca2025: sanitizeNumber(row.CA_2025),
+      ca2026Target: sanitizeNumber(row.CA_2026_target),
+      ca2026Actual: sanitizeNumber(row.CA_2026_actual),
+      ca2027Target: sanitizeNumber(row.CA_2027_target),
+      ca2027Actual: sanitizeNumber(row.CA_2027_actual),
+      // FP (fond propre) / FR (franchise partenaire) / FRO (franchise en
+      // gérance). Column is "Type Gestion" on the live sheet.
+      ownershipType: cleanField(row, 'Type Gestion'),
       // Franchise/gérance partner name — same GDPR sensitivity class as
-      // managerContact/areaManager once real data is filled in. Column is
-      // "Partner_name" on the live sheet (capitalized).
-      partnerName: cleanField(row, 'Partner_name'),
-      // Number or null — store surface in square meters. Column is
-      // "Surface_sqm" on the live sheet (capitalized).
-      surfaceSqm: sanitizeNumber(row.Surface_sqm),
+      // managerContact/areaManager once real data is filled in.
+      partnerName: cleanField(row, 'Nom du partenaire'),
+      // Number or null — store surface in square meters.
+      surfaceSqm: sanitizeNumber(row['Surface m²']),
       // LAB (laboratoire) / ACV (Atelier cosmétique végétal).
-      formatType: cleanField(row, 'format_type'),
+      formatType: cleanField(row, 'Type de format'),
       // Whether the store has an "Institut" (beauty institute service).
-      // Added directly on the live sheet by Cyril — free text/flag for now.
-      presenceInstitut: cleanField(row, 'Presence_Institut'),
+      presenceInstitut: cleanField(row, 'Institut'),
     });
   }
 

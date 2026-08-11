@@ -1,5 +1,34 @@
 # T2 setup steps (Google Sheets — manual, tied to your Google account)
 
+## 0d. Column headers renamed to French — code now matches by header text (2026-08-11)
+
+You renamed almost every Ops sheet column header to French (`name` →
+`Nom`, `province` → `Province`, `address` → `Adresse`, `hours` → `Heure`,
+`phone` → `Téléphone`, `Regional_Sector` → `Responsable Secteur`,
+`profitability_pct` → `Profitabilité (Marge Nette)`, `Ownership_Type` →
+`Type Gestion`, `Partner_name` → `Nom du partenaire`, `Surface_sqm` →
+`Surface m²`, `format_type` → `Type de format`, `Presence_Institut` →
+`Institut`, `updated_at` → `Mise à jour le`). `logic.js` now reads by
+these exact header names — **if you rename a column again, the map will
+silently stop showing that field** until the code is updated to match
+(same failure mode as this time: nothing crashes, the info panel just
+shows less than it should).
+
+Separately, `CA_2025` started exporting as a currency-formatted string
+(`€778,954`) instead of a plain number — likely the cell picked up
+currency formatting in Sheets, which Google converts to display text on
+CSV export. `sanitizeNumber()` in `logic.js` now strips currency symbols
+and disambiguates thousands-grouping commas from decimal commas, so this
+works either way going forward. One side effect: currency formatting
+rounds to whole euros, so `€778,954` lost the exact cents from the
+original `778953.76`. Not fixable in code (the precision is gone before
+the CSV ever reaches the site) — only fixable by changing `CA_2025`'s
+cell format back to plain "Number" in Sheets if the cents matter to you.
+
+`Type de format` (LAB/ACV) can be turned into a dropdown via **Data >
+Data validation > List of items: LAB, ACV** — purely a Sheets-side
+convenience, no code change needed since the values are read as-is.
+
 ## 0c. Filled the Restricted sheet — do NOT commit this file (2026-07-29)
 
 `data/restricted-sheet-seed.csv` is now populated with real content from
