@@ -104,6 +104,7 @@
       const profitability = store.profitabilityPct !== null ? `${store.profitabilityPct}%` : null;
       infoContent.innerHTML = `
         <h2>${escapeHtml(store.name || store.code)}</h2>
+        ${fieldRow('Province', store.province)}
         ${fieldRow('Address', store.address)}
         ${fieldRow('Hours', store.hours)}
         ${fieldRow('Phone', store.phone)}
@@ -116,7 +117,6 @@
         ${fieldRow('Institut', store.presenceInstitut)}
         ${fieldRow('Cabines', store.cabines !== null ? String(store.cabines) : null)}
         ${fieldRow('Surface', formatSqm(store.surfaceSqm))}
-        ${fieldRow('Province', store.province)}
         ${fieldRow('Profitability', profitability)}
         ${fieldRow('Turnover 2025', formatEUR(store.ca2025))}
         ${fieldRow('Turnover 2026 (target)', formatEUR(store.ca2026Target))}
