@@ -104,8 +104,10 @@ describe('parseStores', () => {
         hours: null,
         phone: null,
         managerContact: null,
+        managerEmail: null,
         areaManager: null,
         updatedAt: null,
+        remark: null,
         profitabilityPct: null,
         ca2025: null,
         ca2026Target: null,
@@ -119,6 +121,14 @@ describe('parseStores', () => {
         presenceInstitut: null,
       },
     ]);
+  });
+
+  it('parses Email as managerEmail and Remarque as remark', () => {
+    const { stores } = parseStores([
+      { code: '0001', Nom: 'Store', lat: '50', long: '4', Email: 'lindsaybuyle@hotmail.com', Remarque: 'Institut fermé momentanément' },
+    ]);
+    expect(stores[0].managerEmail).toBe('lindsaybuyle@hotmail.com');
+    expect(stores[0].remark).toBe('Institut fermé momentanément');
   });
 
   it('parses "Profitabilité (Marge Nette)" as a number, including negative values', () => {

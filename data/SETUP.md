@@ -1,5 +1,35 @@
 # T2 setup steps (Google Sheets — manual, tied to your Google account)
 
+## 0e. Store list merge — director name/email/phone, real Institut data (2026-08-12)
+
+Merged from `Copie de 07.2026 Liste des magasins BeLux Coordonnées.xlsx`,
+all 81 codes matched exactly:
+
+- `Directeur` filled for all 81 stores (director's real name).
+- **New `Email` column** (add this to your live Sheet) — director's contact
+  email. Checked the domains: 44/81 (54%) are personal addresses (Gmail,
+  Hotmail, Outlook), not `@yrnet.com`. Flagged this explicitly before
+  merging — **you chose to publish it on the Ops sheet as originally
+  planned**, same as the profitability/CA decisions.
+- `Téléphone` filled with the store phone, internationalized (e.g.
+  `053/787611` → `+32 53 78 76 11`, Luxembourg numbers get `+352`).
+- `Institut` corrected to the file's ground truth: **79/81 stores have
+  one**, not 23 — the old CA-INSTITUTS-based derivation (Institut = CA
+  instituts > 0 that week) badly undercounted; this file's `INSTITUT`
+  column is a direct yes/no, not revenue-dependent.
+- `Type de format` filled with 5 real categories (normalized casing):
+  `LAB Full`, `LAB Light`, `ECO LAB`, `ACV`, `ACV Light` — richer than the
+  LAB/ACV binary assumed earlier.
+- `Type Gestion` filled with 7 real categories: `FP`, `FR`, `FRO`, plus
+  `Fr'YR SUD`, `Fr'YR NORD`, `YR Retail BE FR`, `YR Retail BE NL`.
+- **New `Remarque` column** (add this to your live Sheet) — currently
+  holds "Institut fermé momentanément" for 3 stores (Lier 231,
+  Sint-Truiden 221, Warenne 207).
+
+Add the two new columns (`Email`, `Remarque`) to your live Ops sheet, then
+paste the updated values for `Directeur`/`Téléphone`/`Institut`/`Type de
+format`/`Type Gestion` from `data/ops-sheet-seed.csv`.
+
 ## 0d. Column headers renamed to French — code now matches by header text (2026-08-11)
 
 You renamed almost every Ops sheet column header to French (`name` →

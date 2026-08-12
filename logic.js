@@ -103,12 +103,18 @@ export function parseStores(rows) {
       address: cleanField(row, 'Adresse'),
       hours: cleanField(row, 'Heure'),
       phone: cleanField(row, 'Téléphone'),
-      // Same GDPR sensitivity class as before, still empty/gated in practice.
+      // Personal data (name), published on the Ops sheet per Cyril's
+      // explicit decision (2026-08 store-list merge).
       managerContact: cleanField(row, 'Directeur'),
+      // Director's contact email — often a personal address (gmail/hotmail),
+      // not a company one. Same explicit-publish decision as managerContact.
+      managerEmail: cleanField(row, 'Email'),
       // "Responsable Secteur" is the live sheet's current name for what
       // used to be area_manager / Regional_Sector.
       areaManager: cleanField(row, 'Responsable Secteur'),
       updatedAt: cleanField(row, 'Mise à jour le'),
+      // Free-text operational note (e.g. "Institut fermé momentanément").
+      remark: cleanField(row, 'Remarque'),
       // Number or null (not a cleanField string) — a raw percentage, can be
       // negative. Drives marker color via getProfitabilityColor().
       profitabilityPct: sanitizeNumber(row['Profitabilité (Marge Nette)']),

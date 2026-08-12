@@ -108,6 +108,7 @@
         ${fieldRow('Hours', store.hours)}
         ${fieldRow('Phone', store.phone)}
         ${fieldRow('Director', store.managerContact)}
+        ${fieldRow('Director email', store.managerEmail)}
         ${fieldRow('Area Manager', store.areaManager)}
         ${fieldRow('Ownership type', store.ownershipType)}
         ${fieldRow('Partner', store.partnerName)}
@@ -121,6 +122,7 @@
         ${fieldRow('Turnover 2026 (actual)', formatEUR(store.ca2026Actual))}
         ${fieldRow('Turnover 2027 (target)', formatEUR(store.ca2027Target))}
         ${fieldRow('Turnover 2027 (actual)', formatEUR(store.ca2027Actual))}
+        ${fieldRow('Remark', store.remark)}
       `;
       infoPanel.hidden = false;
     }
