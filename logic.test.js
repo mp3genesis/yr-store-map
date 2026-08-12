@@ -117,6 +117,7 @@ describe('parseStores', () => {
         ownershipType: null,
         partnerName: null,
         surfaceSqm: null,
+        cabines: null,
         formatType: null,
         presenceInstitut: null,
       },
@@ -168,7 +169,7 @@ describe('parseStores', () => {
       CA_2026_target: '850000', CA_2026_actual: '820000',
       CA_2027_target: '900000', CA_2027_actual: '',
       'Type Gestion': 'FR', 'Nom du partenaire': 'Dupont SA',
-      'Surface m²': '65.5', 'Type de format': 'LAB',
+      'Surface m²': '65.5', Cabines: '3', 'Type de format': 'LAB',
     }]);
     const s = stores[0];
     expect(s.ca2026Target).toBe(850000);
@@ -178,6 +179,7 @@ describe('parseStores', () => {
     expect(s.ownershipType).toBe('FR');
     expect(s.partnerName).toBe('Dupont SA');
     expect(s.surfaceSqm).toBe(65.5);
+    expect(s.cabines).toBe(3);
     expect(s.formatType).toBe('LAB');
   });
 

@@ -1,5 +1,28 @@
 # T2 setup steps (Google Sheets — manual, tied to your Google account)
 
+## 0f. Partner names, cabin counts, and surface (2026-08-12)
+
+Merged from `TABLEAU PARTENAIRE.xlsb.xlsx` and `2026 - Belgique -
+Luxembourg - Tableau Immo Yves Rocher BNL.xlsx`:
+
+- `Nom du partenaire` filled for **54/81 stores** — only classic FR/FRO
+  franchise contracts are tracked in this source; the "Fr'YR Nord/Sud"
+  and "YR Retail BE" ownership types have no partner record here (not a
+  gap in the merge, just a different tracking system this file doesn't
+  cover).
+- **New `Cabines` column** (add this to your live Sheet) — physical
+  institut cabin count, same 54-store coverage as partner names (this
+  data comes from the franchise cabin-royalty sheet).
+- `Surface m²` filled for **all 81 stores** — sourced from the RESY
+  architect-plan extraction (`surface utile` = usable YR-operated area:
+  sales + cabins + staff room + stockroom), the most authoritative figure
+  available. Falls back to the Belgique/Luxembourg sheets' architect-plan
+  surface for any code RESY didn't cover (none needed this round).
+
+Add `Cabines` as a new column to your live Ops sheet, then paste the
+updated `Nom du partenaire`/`Surface m²`/`Cabines` values from
+`data/ops-sheet-seed.csv`.
+
 ## 0e. Store list merge — director name/email/phone, real Institut data (2026-08-12)
 
 Merged from `Copie de 07.2026 Liste des magasins BeLux Coordonnées.xlsx`,

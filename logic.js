@@ -131,10 +131,15 @@ export function parseStores(rows) {
       // gérance). Column is "Type Gestion" on the live sheet.
       ownershipType: cleanField(row, 'Type Gestion'),
       // Franchise/gérance partner name — same GDPR sensitivity class as
-      // managerContact/areaManager once real data is filled in.
+      // managerContact/areaManager, published per Cyril's established
+      // decision. Only present for classic FR/FRO contracts — the "Fr'YR
+      // Nord/Sud" and "YR Retail BE" ownership types aren't tracked in the
+      // partner-contract source, not a parsing gap.
       partnerName: cleanField(row, 'Nom du partenaire'),
       // Number or null — store surface in square meters.
       surfaceSqm: sanitizeNumber(row['Surface m²']),
+      // Number or null — count of physical institut cabins.
+      cabines: sanitizeNumber(row.Cabines),
       // LAB (laboratoire) / ACV (Atelier cosmétique végétal).
       formatType: cleanField(row, 'Type de format'),
       // Whether the store has an "Institut" (beauty institute service).

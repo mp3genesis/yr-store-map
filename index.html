@@ -114,6 +114,7 @@
         ${fieldRow('Partner', store.partnerName)}
         ${fieldRow('Format', store.formatType)}
         ${fieldRow('Institut', store.presenceInstitut)}
+        ${fieldRow('Cabines', store.cabines !== null ? String(store.cabines) : null)}
         ${fieldRow('Surface', formatSqm(store.surfaceSqm))}
         ${fieldRow('Province', store.province)}
         ${fieldRow('Profitability', profitability)}
