@@ -50,6 +50,54 @@ header h1 {
   width: 100%;
 }
 
+.gate {
+  position: fixed;
+  inset: 0;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.gate[hidden] {
+  display: none;
+}
+
+.gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 220px;
+}
+
+.gate-form label {
+  color: #ddd;
+  font-size: 0.85rem;
+}
+
+.gate-form input {
+  padding: 10px 12px;
+  font-size: 1rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+.gate-form button {
+  padding: 10px 12px;
+  font-size: 1rem;
+  background: #d4a017;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.gate-error {
+  color: #f8d7da;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 #info-panel {
   position: fixed;
   top: 0;

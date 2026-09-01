@@ -15,6 +15,15 @@
     <h1>Yves Rocher — Belgium &amp; Luxembourg Stores</h1>
   </header>
 
+  <div id="gate" class="gate">
+    <form id="gate-form" class="gate-form">
+      <label for="gate-code">Access code</label>
+      <input id="gate-code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <button type="submit">Enter</button>
+      <p id="gate-error" class="gate-error" hidden>Incorrect code.</p>
+    </form>
+  </div>
+
   <div id="banner" class="banner" hidden></div>
 
   <div id="map"></div>
@@ -42,6 +51,61 @@
       getProfitabilityColor,
       DEFAULT_PROFITABILITY_TIERS,
     } from './logic.js';
+
+    // Access gate — a client-side speed bump only. It hides the map's UI
+    // from casual/accidental visitors (search engines, a shared link opened
+    // by the wrong person). It does NOT protect the underlying data: the
+    // published Google Sheet CSV below is fetched directly by URL and has
+    // no gate of its own, so anyone with that URL can read the raw data
+    // regardless of this code. Known and accepted limitation — see chat.
+    const GATE_CODE_HASH = 'f7807085357b00641c4338d3fa07e25437d52292058d3755bf5205137827427f';
+    const GATE_STORAGE_KEY = 'yr-store-map-gate-ok';
+
+    async function sha256Hex(text) {
+      const data = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function initGate() {
+      const gate = document.getElementById('gate');
+      const form = document.getElementById('gate-form');
+      const input = document.getElementById('gate-code');
+      const error = document.getElementById('gate-error');
+
+      if (localStorage.getItem(GATE_STORAGE_KEY) === GATE_CODE_HASH) {
+        gate.hidden = true;
+        return;
+      }
+
+      gate.hidden = false;
+      input.focus();
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hash = await sha256Hex(input.value.trim());
+        if (hash === GATE_CODE_HASH) {
+          localStorage.setItem(GATE_STORAGE_KEY, GATE_CODE_HASH);
+          gate.hidden = true;
+          error.hidden = true;
+        } else {
+          error.hidden = false;
+          input.value = '';
+          input.focus();
+        }
+      });
+
+      // Block until the gate is passed.
+      await new Promise((resolve) => {
+        const observer = new MutationObserver(() => {
+          if (gate.hidden) {
+            observer.disconnect();
+            resolve();
+          }
+        });
+        observer.observe(gate, { attributes: true, attributeFilter: ['hidden'] });
+      });
+    }
 
     // Published "Ops" sheet CSV — see data/SETUP.md for how this is generated.
     const OPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=469869102&single=true&output=csv';
@@ -228,6 +292,7 @@
     }
 
     async function boot() {
+      await initGate();
       const leafletOk = typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function';
       const papaOk = typeof Papa !== 'undefined';
       if (window.__scriptLoadFailed || !leafletOk || !papaOk) {
