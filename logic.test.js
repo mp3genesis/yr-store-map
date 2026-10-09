@@ -120,8 +120,24 @@ describe('parseStores', () => {
         cabines: null,
         formatType: null,
         presenceInstitut: null,
+        partnerRisk: null,
+        nextLeaseTermination: null,
       },
     ]);
+  });
+
+  it('parses Risque partenaire and Prochaine résiliation de bail as plain text', () => {
+    const { stores } = parseStores([
+      {
+        code: '0001', Nom: 'Store', lat: '50', long: '4',
+        'Risque partenaire': 'Élevé', 'Prochaine résiliation de bail': '31/12/2026',
+      },
+      { code: '0002', Nom: 'Other', lat: '50', long: '4', 'Risque partenaire': '  ', 'Prochaine résiliation de bail': '' },
+    ]);
+    expect(stores[0].partnerRisk).toBe('Élevé');
+    expect(stores[0].nextLeaseTermination).toBe('31/12/2026');
+    expect(stores[1].partnerRisk).toBeNull();
+    expect(stores[1].nextLeaseTermination).toBeNull();
   });
 
   it('parses Email as managerEmail and Remarque as remark', () => {

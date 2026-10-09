@@ -144,6 +144,12 @@ export function parseStores(rows) {
       formatType: cleanField(row, 'Type de format'),
       // Whether the store has an "Institut" (beauty institute service).
       presenceInstitut: cleanField(row, 'Institut'),
+      // Free text, as typed in the Sheet (e.g. "Faible", "Moyen", "Élevé",
+      // "Sans objet (repris en FP)") — shown as-is, not interpreted.
+      partnerRisk: cleanField(row, 'Risque partenaire'),
+      // Date text as typed in the Sheet (dd/mm/yyyy) — shown as-is rather
+      // than parsed, so a half-typed or non-date cell still displays.
+      nextLeaseTermination: cleanField(row, 'Prochaine résiliation de bail'),
     });
   }
 
