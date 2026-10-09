@@ -50,6 +50,42 @@ header h1 {
   width: 100%;
 }
 
+.locate-button {
+  display: block;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  font-size: 18px;
+  color: #1a73e8;
+  background: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.locate-button--busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.locate-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 90vw;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  z-index: 1500;
+}
+
+.locate-toast[hidden] {
+  display: none;
+}
+
 .gate {
   position: fixed;
   inset: 0;

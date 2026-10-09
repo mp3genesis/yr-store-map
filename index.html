@@ -227,6 +227,84 @@
       }).addTo(map);
       clusterGroup = L.markerClusterGroup();
       map.addLayer(clusterGroup);
+      initLocateControl();
+    }
+
+    // "Where am I" button. Geolocation is only requested on click (never on
+    // page load), and the position stays in the browser — it is drawn on the
+    // map and never sent anywhere. Requires https, which GitHub Pages is.
+    function initLocateControl() {
+      const meLayer = L.layerGroup().addTo(map);
+      const toast = document.createElement('div');
+      toast.className = 'locate-toast';
+      toast.hidden = true;
+      document.body.appendChild(toast);
+      let toastTimer;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 5000);
+      }
+
+      const LocateControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+          const button = L.DomUtil.create('a', 'locate-button', container);
+          button.href = '#';
+          button.role = 'button';
+          button.title = 'Show my location';
+          button.setAttribute('aria-label', 'Show my location');
+          button.innerHTML = '&#9678;';
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.on(button, 'click', (e) => {
+            L.DomEvent.preventDefault(e);
+            if (!('geolocation' in navigator)) {
+              showToast('Geolocation is not supported by this browser.');
+              return;
+            }
+            button.classList.add('locate-button--busy');
+            map.invalidateSize(); // zoom is computed from the container size
+            map.locate({ setView: true, maxZoom: 13, timeout: 10000, enableHighAccuracy: true });
+          });
+          return container;
+        },
+      });
+      map.addControl(new LocateControl());
+
+      const clearBusy = () => {
+        const b = document.querySelector('.locate-button');
+        if (b) b.classList.remove('locate-button--busy');
+      };
+
+      map.on('locationfound', (e) => {
+        clearBusy();
+        meLayer.clearLayers();
+        L.circle(e.latlng, {
+          radius: e.accuracy,
+          color: '#1a73e8',
+          weight: 1,
+          fillColor: '#1a73e8',
+          fillOpacity: 0.12,
+        }).addTo(meLayer);
+        L.circleMarker(e.latlng, {
+          radius: 7,
+          color: '#fff',
+          weight: 2,
+          fillColor: '#1a73e8',
+          fillOpacity: 1,
+        }).bindTooltip('You are here').addTo(meLayer);
+      });
+
+      map.on('locationerror', (e) => {
+        clearBusy();
+        const denied = e.code === 1;
+        showToast(denied
+          ? 'Location access was denied — allow it in your browser settings for this site.'
+          : "Couldn't determine your location — try again.");
+      });
     }
 
     function renderMap(stores) {
