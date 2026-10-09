@@ -50,6 +50,7 @@
       hasValue,
       getProfitabilityColor,
       getLeaseCriticality,
+      getPartnerRiskLevel,
       describeDaysLeft,
       DEFAULT_PROFITABILITY_TIERS,
     } from './logic.js';
@@ -178,6 +179,16 @@
         `<span class="lease-badge lease-badge--${info.level}" title="${escapeHtml(LEASE_LEVEL_LABELS[info.level])}">${escapeHtml(detail)}</span></span></div>`;
     }
 
+    // Partner risk row: the text as typed in the Sheet, in a colored badge
+    // (low green / medium orange / high red; "Sans objet" and unrecognised
+    // values stay neutral grey).
+    function riskRow(label, raw) {
+      const info = getPartnerRiskLevel(raw);
+      if (!info) return '';
+      return `<div class="info-row"><span class="info-label">${label}</span>` +
+        `<span class="info-value"><span class="risk-badge risk-badge--${info.level}">${escapeHtml(info.text)}</span></span></div>`;
+    }
+
     // Explicit 'fr-BE' locale (not the visitor's browser default) so this
     // always renders as Belgian/French euro formatting — "778 954 €" — not
     // whatever locale the person viewing the map happens to have set.
@@ -204,7 +215,7 @@
         ${fieldRow('Area Manager', store.areaManager)}
         ${fieldRow('Ownership type', store.ownershipType)}
         ${fieldRow('Partner', store.partnerName)}
-        ${fieldRow('Partner risk', store.partnerRisk)}
+        ${riskRow('Partner risk', store.partnerRisk)}
         ${leaseRow('Next lease termination', store.nextLeaseTermination)}
         ${fieldRow('Format', store.formatType)}
         ${fieldRow('Institut', store.presenceInstitut)}

@@ -15,6 +15,7 @@ import {
   parseFrDate,
   formatFrDate,
   getLeaseCriticality,
+  getPartnerRiskLevel,
   describeDaysLeft,
   DEFAULT_PROFITABILITY_TIERS,
   DEFAULT_MARKER_COLOR,
@@ -465,5 +466,24 @@ describe('lease termination dates', () => {
     expect(describeDaysLeft(21)).toBe('in 3 weeks');
     expect(describeDaysLeft(200)).toBe('in 7 months');
     expect(describeDaysLeft(-90)).toBe('expired 3 months ago');
+  });
+});
+
+describe('getPartnerRiskLevel', () => {
+  it('maps the Sheet values to bands, ignoring case and accents', () => {
+    const lvl = (s) => getPartnerRiskLevel(s).level;
+    expect(lvl('Faible')).toBe('low');
+    expect(lvl('Moyen')).toBe('medium');
+    expect(lvl('Élevé')).toBe('high');
+    expect(lvl('ELEVE')).toBe('high');
+    expect(lvl('élevé - à surveiller')).toBe('high');
+    expect(lvl('Sans objet (repris en FP)')).toBe('none');
+  });
+
+  it('keeps the typed text, flags unknown values, and ignores empty cells', () => {
+    expect(getPartnerRiskLevel('À évaluer')).toEqual({ level: 'unknown', text: 'À évaluer' });
+    expect(getPartnerRiskLevel('  Moyen ').text).toBe('Moyen');
+    expect(getPartnerRiskLevel('')).toBeNull();
+    expect(getPartnerRiskLevel(null)).toBeNull();
   });
 });

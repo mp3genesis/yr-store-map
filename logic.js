@@ -79,6 +79,23 @@ export function parseFrDate(raw) {
   return date;
 }
 
+// Maps the free-text "Risque partenaire" cell to a color band. Matching is
+// case- and accent-insensitive and matches on the leading word, so "Élevé",
+// "elevé", "ÉLEVÉ - à surveiller" all read as high. "Sans objet ..." (e.g.
+// store taken back in FP, no partner left) is neutral, not a risk level.
+// Anything unrecognised is kept as typed with level 'unknown'.
+export function getPartnerRiskLevel(raw) {
+  if (!hasValue(raw)) return null;
+  const text = String(raw).trim();
+  const key = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  let level = 'unknown';
+  if (/^(faible|bas|low)\b/.test(key)) level = 'low';
+  else if (/^(moyen|modere|medium)\b/.test(key)) level = 'medium';
+  else if (/^(eleve|haut|fort|high)\b/.test(key)) level = 'high';
+  else if (/^(sans objet|n\/?a|non applicable)/.test(key)) level = 'none';
+  return { level, text };
+}
+
 // Canonical dd/mm/yyyy form of a parseable date, or null.
 export function formatFrDate(date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) return null;

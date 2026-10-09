@@ -195,6 +195,20 @@ header h1 {
   white-space: nowrap;
 }
 
+.risk-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.risk-badge--high    { background: #d93025; color: #fff; }
+.risk-badge--medium  { background: #f58231; color: #1a1a1a; }
+.risk-badge--low     { background: #3cb44b; color: #fff; }
+.risk-badge--none,
+.risk-badge--unknown { background: #e0e0e0; color: #444; }
+
 .lease-badge--expired  { background: #1a1a1a; color: #fff; }
 .lease-badge--critical { background: #d93025; color: #fff; }
 .lease-badge--warning  { background: #f58231; color: #1a1a1a; }
