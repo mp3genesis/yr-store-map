@@ -53,7 +53,11 @@
       getPartnerRiskLevel,
       describeDaysLeft,
       DEFAULT_PROFITABILITY_TIERS,
-    } from './logic.js';
+    // The ?v= suffix pins logic.js to this exact index.html. GitHub Pages
+    // caches files for 10 min independently, so without it a returning
+    // visitor can get a new index.html with an old logic.js and a blank map.
+    // Bump it whenever logic.js changes its exports.
+    } from './logic.js?v=20261010';
 
     // Access gate — a client-side speed bump only. It hides the map's UI
     // from casual/accidental visitors (search engines, a shared link opened
