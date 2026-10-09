@@ -184,3 +184,20 @@ header h1 {
 .info-value {
   font-size: 0.95rem;
 }
+
+.lease-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lease-badge--expired  { background: #1a1a1a; color: #fff; }
+.lease-badge--critical { background: #d93025; color: #fff; }
+.lease-badge--warning  { background: #f58231; color: #1a1a1a; }
+.lease-badge--watch    { background: #f9d949; color: #1a1a1a; }
+.lease-badge--ok       { background: #3cb44b; color: #fff; }
+.lease-badge--unknown  { background: #e0e0e0; color: #444; font-style: italic; }

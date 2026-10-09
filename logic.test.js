@@ -12,6 +12,10 @@ import {
   getProfitabilityColor,
   parseProfitabilityTiers,
   parseTiersCSVText,
+  parseFrDate,
+  formatFrDate,
+  getLeaseCriticality,
+  describeDaysLeft,
   DEFAULT_PROFITABILITY_TIERS,
   DEFAULT_MARKER_COLOR,
 } from './logic.js';
@@ -412,5 +416,54 @@ describe('cache read/write', () => {
     };
     expect(saveCache([{ code: '0001' }], null)).toBe(false);
     global.localStorage = original;
+  });
+});
+
+describe('lease termination dates', () => {
+  const today = new Date(2026, 9, 10); // 10 Oct 2026
+
+  it('parses day-first dates and tolerates separators / short forms', () => {
+    expect(parseFrDate('31/12/2026')).toEqual(new Date(2026, 11, 31));
+    expect(parseFrDate('1/3/2027')).toEqual(new Date(2027, 2, 1));
+    expect(parseFrDate('05-06-27')).toEqual(new Date(2027, 5, 5));
+    expect(parseFrDate('14.01.2029')).toEqual(new Date(2029, 0, 14));
+  });
+
+  it('rejects impossible or US-ordered dates instead of rolling them over', () => {
+    expect(parseFrDate('31/02/2026')).toBeNull();
+    expect(parseFrDate('12/31/2026')).toBeNull();
+    expect(parseFrDate('bientôt')).toBeNull();
+    expect(parseFrDate('')).toBeNull();
+    expect(parseFrDate(null)).toBeNull();
+  });
+
+  it('formats to canonical dd/mm/yyyy', () => {
+    expect(formatFrDate(parseFrDate('1/3/2027'))).toBe('01/03/2027');
+  });
+
+  it('classifies by distance from today', () => {
+    const level = (s) => getLeaseCriticality(s, today).level;
+    expect(level('09/10/2026')).toBe('expired');
+    expect(level('10/10/2026')).toBe('critical'); // today itself: no time left
+    expect(level('10/04/2027')).toBe('critical'); // exactly 6 months
+    expect(level('11/04/2027')).toBe('warning');
+    expect(level('10/10/2027')).toBe('warning'); // exactly 12 months
+    expect(level('11/10/2027')).toBe('watch');
+    expect(level('10/10/2028')).toBe('watch'); // exactly 24 months
+    expect(level('11/10/2028')).toBe('ok');
+  });
+
+  it('keeps unreadable text visible and ignores empty cells', () => {
+    expect(getLeaseCriticality('à confirmer', today)).toMatchObject({ level: 'unknown', text: 'à confirmer' });
+    expect(getLeaseCriticality('  ', today)).toBeNull();
+    expect(getLeaseCriticality(null, today)).toBeNull();
+  });
+
+  it('describes the remaining time', () => {
+    expect(describeDaysLeft(0)).toBe('today');
+    expect(describeDaysLeft(5)).toBe('in 5 days');
+    expect(describeDaysLeft(21)).toBe('in 3 weeks');
+    expect(describeDaysLeft(200)).toBe('in 7 months');
+    expect(describeDaysLeft(-90)).toBe('expired 3 months ago');
   });
 });

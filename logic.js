@@ -60,6 +60,78 @@ export function sanitizeCoordinate(raw) {
 // whitespace-only are treated the same as a missing key, so the info panel
 // can render "field is absent" uniformly regardless of which shape the gap
 // takes in a half-filled Sheet row.
+// Parses a day-first date typed in the Sheet ("31/12/2026"). Tolerates
+// single-digit day/month, ".", "-" or "/" separators and a 2-digit year, but
+// is strict about the calendar: 31/02/2026 or a month > 12 returns null
+// instead of rolling over into a different date. A US-formatted export
+// ("12/31/2026") fails the month check and is reported as unreadable rather
+// than silently misread — see the note in data/SETUP.md.
+export function parseFrDate(raw) {
+  if (raw === null || raw === undefined) return null;
+  const m = String(raw).trim().match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4}|\d{2})$/);
+  if (!m) return null;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  let year = Number(m[3]);
+  if (m[3].length === 2) year += 2000;
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+// Canonical dd/mm/yyyy form of a parseable date, or null.
+export function formatFrDate(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${date.getFullYear()}`;
+}
+
+function addMonths(date, months) {
+  const target = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(date.getDate(), lastDay));
+  return target;
+}
+
+// Criticality of the next lease termination date, from "today":
+//   expired  — already past
+//   critical — within 6 months   (no time left to negotiate or relocate)
+//   warning  — within 12 months
+//   watch    — within 24 months
+//   ok       — beyond 24 months
+// Unparseable or missing text returns level 'unknown' with the raw text kept,
+// so a mistyped cell still shows up instead of vanishing.
+export function getLeaseCriticality(raw, today = new Date()) {
+  if (!hasValue(raw)) return null;
+  const date = parseFrDate(raw);
+  if (!date) return { level: 'unknown', text: String(raw).trim(), date: null, daysLeft: null };
+
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const daysLeft = Math.round((date - start) / 86400000);
+  let level;
+  if (daysLeft < 0) level = 'expired';
+  else if (date <= addMonths(start, 6)) level = 'critical';
+  else if (date <= addMonths(start, 12)) level = 'warning';
+  else if (date <= addMonths(start, 24)) level = 'watch';
+  else level = 'ok';
+  return { level, text: formatFrDate(date), date, daysLeft };
+}
+
+// Human wording of the remaining time ("in 3 weeks", "in 14 months",
+// "expired 2 months ago"), from the daysLeft that getLeaseCriticality returns.
+export function describeDaysLeft(daysLeft) {
+  if (daysLeft === null || daysLeft === undefined) return '';
+  const abs = Math.abs(daysLeft);
+  let span;
+  if (abs === 0) return 'today';
+  if (abs < 14) span = `${abs} day${abs > 1 ? 's' : ''}`;
+  else if (abs < 60) span = `${Math.round(abs / 7)} weeks`;
+  else if (abs < 730) span = `${Math.round(abs / 30.44)} months`;
+  else span = `${(abs / 365.25).toFixed(1).replace(/\.0$/, '')} years`;
+  return daysLeft > 0 ? `in ${span}` : `expired ${span} ago`;
+}
+
 export function hasValue(value) {
   return value !== undefined && value !== null && String(value).trim() !== '';
 }

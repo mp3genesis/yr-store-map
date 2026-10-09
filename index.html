@@ -49,6 +49,8 @@
       loadCache,
       hasValue,
       getProfitabilityColor,
+      getLeaseCriticality,
+      describeDaysLeft,
       DEFAULT_PROFITABILITY_TIERS,
     } from './logic.js';
 
@@ -151,6 +153,31 @@
       return `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${escapeHtml(value)}</span></div>`;
     }
 
+    // Lease termination row: the date is shown in canonical dd/mm/yyyy with a
+    // colored badge by criticality (see getLeaseCriticality). A value that
+    // isn't a readable date is shown as typed, flagged "check date format".
+    const LEASE_LEVEL_LABELS = {
+      expired: 'Expired',
+      critical: '< 6 months',
+      warning: '< 12 months',
+      watch: '< 24 months',
+      ok: '> 24 months',
+      unknown: 'check date format',
+    };
+
+    function leaseRow(label, raw) {
+      const info = getLeaseCriticality(raw);
+      if (!info) return '';
+      const remaining = info.daysLeft !== null ? describeDaysLeft(info.daysLeft) : '';
+      // Badge text is the remaining time; the criticality band is the color
+      // and shows as a tooltip. Unreadable dates have no time, so the band
+      // label ("check date format") is the text.
+      const detail = remaining || LEASE_LEVEL_LABELS[info.level];
+      return `<div class="info-row"><span class="info-label">${label}</span>` +
+        `<span class="info-value">${escapeHtml(info.text)} ` +
+        `<span class="lease-badge lease-badge--${info.level}" title="${escapeHtml(LEASE_LEVEL_LABELS[info.level])}">${escapeHtml(detail)}</span></span></div>`;
+    }
+
     // Explicit 'fr-BE' locale (not the visitor's browser default) so this
     // always renders as Belgian/French euro formatting — "778 954 €" — not
     // whatever locale the person viewing the map happens to have set.
@@ -178,7 +205,7 @@
         ${fieldRow('Ownership type', store.ownershipType)}
         ${fieldRow('Partner', store.partnerName)}
         ${fieldRow('Partner risk', store.partnerRisk)}
-        ${fieldRow('Next lease termination', store.nextLeaseTermination)}
+        ${leaseRow('Next lease termination', store.nextLeaseTermination)}
         ${fieldRow('Format', store.formatType)}
         ${fieldRow('Institut', store.presenceInstitut)}
         ${fieldRow('Cabines', store.cabines !== null ? String(store.cabines) : null)}
