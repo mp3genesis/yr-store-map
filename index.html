@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yves Rocher — Belgium &amp; Luxembourg Stores</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="style.css?v=20261010" />
+</head>
+<body>
+  <header>
+    <h1>Yves Rocher — Belgium &amp; Luxembourg Stores</h1>
+  </header>
+
+  <div id="gate" class="gate">
+    <form id="gate-form" class="gate-form">
+      <label for="gate-code">Access code</label>
+      <input id="gate-code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <button type="submit">Enter</button>
+      <p id="gate-error" class="gate-error" hidden>Incorrect code.</p>
+    </form>
+  </div>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <div id="map"></div>
+
+  <aside id="info-panel" hidden>
+    <button id="info-close" aria-label="Close">&times;</button>
+    <div id="info-content"></div>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""
+    onerror="window.__scriptLoadFailed = true"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    onerror="window.__scriptLoadFailed = true"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"
+    onerror="window.__scriptLoadFailed = true"></script>
+
+  <script type="module">
+    import {
+      parseCSVText,
+      parseTiersCSVText,
+      saveCache,
+      loadCache,
+      hasValue,
+      getProfitabilityColor,
+      getLeaseCriticality,
+      getPartnerRiskLevel,
+      describeDaysLeft,
+      DEFAULT_PROFITABILITY_TIERS,
+    // The ?v= suffix pins logic.js to this exact index.html. GitHub Pages
+    // caches files for 10 min independently, so without it a returning
+    // visitor can get a new index.html with an old logic.js and a blank map.
+    // Bump it (here and on the style.css link) whenever logic.js exports or
+    // style.css change.
+    } from './logic.js?v=20261010';
+
+    // Access gate — a client-side speed bump only. It hides the map's UI
+    // from casual/accidental visitors (search engines, a shared link opened
+    // by the wrong person). It does NOT protect the underlying data: the
+    // published Google Sheet CSV below is fetched directly by URL and has
+    // no gate of its own, so anyone with that URL can read the raw data
+    // regardless of this code. Known and accepted limitation — see chat.
+    const GATE_CODE_HASH = 'f7807085357b00641c4338d3fa07e25437d52292058d3755bf5205137827427f';
+    const GATE_STORAGE_KEY = 'yr-store-map-gate-ok';
+
+    async function sha256Hex(text) {
+      const data = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function initGate() {
+      const gate = document.getElementById('gate');
+      const form = document.getElementById('gate-form');
+      const input = document.getElementById('gate-code');
+      const error = document.getElementById('gate-error');
+
+      if (localStorage.getItem(GATE_STORAGE_KEY) === GATE_CODE_HASH) {
+        gate.hidden = true;
+        return;
+      }
+
+      gate.hidden = false;
+      input.focus();
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hash = await sha256Hex(input.value.trim());
+        if (hash === GATE_CODE_HASH) {
+          localStorage.setItem(GATE_STORAGE_KEY, GATE_CODE_HASH);
+          gate.hidden = true;
+          error.hidden = true;
+        } else {
+          error.hidden = false;
+          input.value = '';
+          input.focus();
+        }
+      });
+
+      // Block until the gate is passed.
+      await new Promise((resolve) => {
+        const observer = new MutationObserver(() => {
+          if (gate.hidden) {
+            observer.disconnect();
+            resolve();
+          }
+        });
+        observer.observe(gate, { attributes: true, attributeFilter: ['hidden'] });
+      });
+    }
+
+    // Published "Ops" sheet CSV — see data/SETUP.md for how this is generated.
+    const OPS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=469869102&single=true&output=csv';
+
+    // Published "ProfitabilityTiers" sheet CSV — lets the thresholds and
+    // colors be changed from the Sheet without touching code. If this ever
+    // fails to fetch, the map falls back to DEFAULT_PROFITABILITY_TIERS,
+    // which is fine — this is cosmetic, not a load-bearing failure mode
+    // like the ops data is.
+    const PROFITABILITY_TIERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzTnVl6qH23BclFeT_Uv32xbLliGlNLHn-o4fE3s5MTCy7ZbILXmDKr_G3QvJftSMWjfEJ7bhp8Cxl/pub?gid=892996556&single=true&output=csv';
+
+    const banner = document.getElementById('banner');
+    const mapEl = document.getElementById('map');
+    const infoPanel = document.getElementById('info-panel');
+    const infoContent = document.getElementById('info-content');
+    const infoClose = document.getElementById('info-close');
+
+    infoClose.addEventListener('click', () => {
+      infoPanel.hidden = true;
+    });
+
+    function showBanner(message, kind) {
+      banner.textContent = message;
+      banner.className = 'banner banner--' + kind;
+      banner.hidden = false;
+    }
+
+    function hideBanner() {
+      banner.hidden = true;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function fieldRow(label, value) {
+      // Reuses the same hasValue() the Vitest suite verifies against empty
+      // string / whitespace-only / missing key — this is the exact rendering
+      // path the outside-voice review flagged as untested at the UI layer.
+      if (!hasValue(value)) return '';
+      return `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${escapeHtml(value)}</span></div>`;
+    }
+
+    // Lease termination row: the date is shown in canonical dd/mm/yyyy with a
+    // colored badge by criticality (see getLeaseCriticality). A value that
+    // isn't a readable date is shown as typed, flagged "check date format".
+    const LEASE_LEVEL_LABELS = {
+      expired: 'Expired',
+      critical: '< 6 months',
+      warning: '< 12 months',
+      watch: '< 24 months',
+      ok: '> 24 months',
+      unknown: 'check date format',
+    };
+
+    function leaseRow(label, raw) {
+      const info = getLeaseCriticality(raw);
+      if (!info) return '';
+      const remaining = info.daysLeft !== null ? describeDaysLeft(info.daysLeft) : '';
+      // Badge text is the remaining time; the criticality band is the color
+      // and shows as a tooltip. Unreadable dates have no time, so the band
+      // label ("check date format") is the text.
+      const detail = remaining || LEASE_LEVEL_LABELS[info.level];
+      return `<div class="info-row"><span class="info-label">${label}</span>` +
+        `<span class="info-value">${escapeHtml(info.text)} ` +
+        `<span class="lease-badge lease-badge--${info.level}" title="${escapeHtml(LEASE_LEVEL_LABELS[info.level])}">${escapeHtml(detail)}</span></span></div>`;
+    }
+
+    // Partner risk row: the text as typed in the Sheet, in a colored badge
+    // (low green / medium orange / high red; "Sans objet" and unrecognised
+    // values stay neutral grey).
+    function riskRow(label, raw) {
+      const info = getPartnerRiskLevel(raw);
+      if (!info) return '';
+      return `<div class="info-row"><span class="info-label">${label}</span>` +
+        `<span class="info-value"><span class="risk-badge risk-badge--${info.level}">${escapeHtml(info.text)}</span></span></div>`;
+    }
+
+    // Explicit 'fr-BE' locale (not the visitor's browser default) so this
+    // always renders as Belgian/French euro formatting — "778 954 €" — not
+    // whatever locale the person viewing the map happens to have set.
+    function formatEUR(value) {
+      if (value === null || value === undefined) return null;
+      return value.toLocaleString('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    }
+
+    function formatSqm(value) {
+      if (value === null || value === undefined) return null;
+      return `${value.toLocaleString('fr-BE')} m²`;
+    }
+
+    function showStoreInfo(store) {
+      const profitability = store.profitabilityPct !== null ? `${store.profitabilityPct}%` : null;
+      infoContent.innerHTML = `
+        <h2>${escapeHtml(store.name || store.code)}</h2>
+        ${fieldRow('Province', store.province)}
+        ${fieldRow('Address', store.address)}
+        ${fieldRow('Hours', store.hours)}
+        ${fieldRow('Phone', store.phone)}
+        ${fieldRow('Director', store.managerContact)}
+        ${fieldRow('Director email', store.managerEmail)}
+        ${fieldRow('Area Manager', store.areaManager)}
+        ${fieldRow('Ownership type', store.ownershipType)}
+        ${fieldRow('Partner', store.partnerName)}
+        ${riskRow('Partner risk', store.partnerRisk)}
+        ${leaseRow('Next lease termination', store.nextLeaseTermination)}
+        ${fieldRow('Format', store.formatType)}
+        ${fieldRow('Institut', store.presenceInstitut)}
+        ${fieldRow('Cabines', store.cabines !== null ? String(store.cabines) : null)}
+        ${fieldRow('Surface', formatSqm(store.surfaceSqm))}
+        ${fieldRow('Profitability', profitability)}
+        ${fieldRow('Turnover 2025', formatEUR(store.ca2025))}
+        ${fieldRow('Turnover 2026 (target)', formatEUR(store.ca2026Target))}
+        ${fieldRow('Turnover 2026 (actual)', formatEUR(store.ca2026Actual))}
+        ${fieldRow('Turnover 2027 (target)', formatEUR(store.ca2027Target))}
+        ${fieldRow('Turnover 2027 (actual)', formatEUR(store.ca2027Actual))}
+        ${fieldRow('Remark', store.remark)}
+      `;
+      infoPanel.hidden = false;
+    }
+
+    // Starts as the hardcoded defaults; fetchProfitabilityTiers() replaces
+    // it wholesale if the published ProfitabilityTiers sheet parses with at
+    // least one valid tier. Colors/thresholds are cosmetic, so a fetch
+    // failure here degrades gracefully instead of blocking the map like the
+    // ops-data fetch does.
+    let profitabilityTiers = DEFAULT_PROFITABILITY_TIERS;
+
+    async function fetchProfitabilityTiers() {
+      if (!PROFITABILITY_TIERS_URL || PROFITABILITY_TIERS_URL.startsWith('PLACEHOLDER')) {
+        return; // sheet not set up yet — keep defaults, no error needed
+      }
+      try {
+        const response = await fetch(PROFITABILITY_TIERS_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const csvText = await response.text();
+        const { tiers, skipped } = parseTiersCSVText(csvText);
+        if (skipped.length) console.warn('Skipped rows while parsing profitability tiers:', skipped);
+        if (tiers.length) profitabilityTiers = tiers; // keep defaults if the sheet had nothing valid
+      } catch (err) {
+        console.warn('Failed to fetch profitability tiers, using defaults:', err);
+      }
+    }
+
+    let map;
+    let clusterGroup;
+
+    function initMapIfNeeded() {
+      if (map) return;
+      map = L.map('map').setView([50.6, 4.9], 8); // rough BE/LU center
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
+      clusterGroup = L.markerClusterGroup();
+      map.addLayer(clusterGroup);
+      initLocateControl();
+    }
+
+    // "Where am I" button. Geolocation is only requested on click (never on
+    // page load), and the position stays in the browser — it is drawn on the
+    // map and never sent anywhere. Requires https, which GitHub Pages is.
+    function initLocateControl() {
+      const meLayer = L.layerGroup().addTo(map);
+      const toast = document.createElement('div');
+      toast.className = 'locate-toast';
+      toast.hidden = true;
+      document.body.appendChild(toast);
+      let toastTimer;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.hidden = true; }, 5000);
+      }
+
+      const LocateControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+          const button = L.DomUtil.create('a', 'locate-button', container);
+          button.href = '#';
+          button.role = 'button';
+          button.title = 'Show my location';
+          button.setAttribute('aria-label', 'Show my location');
+          button.innerHTML = '&#9678;';
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.on(button, 'click', (e) => {
+            L.DomEvent.preventDefault(e);
+            if (!('geolocation' in navigator)) {
+              showToast('Geolocation is not supported by this browser.');
+              return;
+            }
+            button.classList.add('locate-button--busy');
+            map.invalidateSize(); // zoom is computed from the container size
+            map.locate({ setView: true, maxZoom: 13, timeout: 10000, enableHighAccuracy: true });
+          });
+          return container;
+        },
+      });
+      map.addControl(new LocateControl());
+
+      const clearBusy = () => {
+        const b = document.querySelector('.locate-button');
+        if (b) b.classList.remove('locate-button--busy');
+      };
+
+      map.on('locationfound', (e) => {
+        clearBusy();
+        meLayer.clearLayers();
+        L.circle(e.latlng, {
+          radius: e.accuracy,
+          color: '#1a73e8',
+          weight: 1,
+          fillColor: '#1a73e8',
+          fillOpacity: 0.12,
+        }).addTo(meLayer);
+        L.circleMarker(e.latlng, {
+          radius: 7,
+          color: '#fff',
+          weight: 2,
+          fillColor: '#1a73e8',
+          fillOpacity: 1,
+        }).bindTooltip('You are here').addTo(meLayer);
+      });
+
+      map.on('locationerror', (e) => {
+        clearBusy();
+        const denied = e.code === 1;
+        showToast(denied
+          ? 'Location access was denied — allow it in your browser settings for this site.'
+          : "Couldn't determine your location — try again.");
+      });
+    }
+
+    function renderMap(stores) {
+      initMapIfNeeded();
+      clusterGroup.clearLayers();
+      for (const store of stores) {
+        const color = getProfitabilityColor(store.profitabilityPct, profitabilityTiers);
+        const marker = L.circleMarker([store.lat, store.long], {
+          radius: 8,
+          color: '#222',
+          weight: 1,
+          fillColor: color,
+          fillOpacity: 0.9,
+        });
+        marker.bindTooltip(store.name || store.code);
+        marker.on('click', () => showStoreInfo(store));
+        clusterGroup.addLayer(marker);
+      }
+    }
+
+    function latestUpdatedAt(stores) {
+      let latest = null;
+      for (const s of stores) {
+        if (!s.updatedAt) continue;
+        const d = new Date(s.updatedAt);
+        if (isNaN(d.getTime())) continue;
+        if (!latest || d > latest) latest = d;
+      }
+      return latest;
+    }
+
+    function formatTimestamp(iso) {
+      if (!iso) return 'an unknown time';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return 'an unknown time';
+      return d.toLocaleString();
+    }
+
+    async function fetchOpsData() {
+      try {
+        const response = await fetch(OPS_CSV_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const csvText = await response.text();
+        const { stores, skipped } = parseCSVText(csvText);
+        if (skipped.length) console.warn('Skipped rows while parsing ops data:', skipped);
+
+        const updatedAt = latestUpdatedAt(stores);
+        saveCache(stores, updatedAt ? updatedAt.toISOString() : null);
+
+        renderMap(stores);
+        hideBanner();
+      } catch (err) {
+        console.error('Failed to fetch live store data:', err);
+        const cached = loadCache();
+        if (cached && cached.stores && cached.stores.length) {
+          renderMap(cached.stores);
+          const asOf = cached.updatedAt || cached.cachedAt;
+          showBanner(`Data may be outdated — showing data as of ${formatTimestamp(asOf)}.`, 'stale');
+        } else {
+          showBanner("Couldn't load store data — try refreshing the page.", 'error');
+        }
+      }
+    }
+
+    async function boot() {
+      await initGate();
+      const leafletOk = typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function';
+      const papaOk = typeof Papa !== 'undefined';
+      if (window.__scriptLoadFailed || !leafletOk || !papaOk) {
+        mapEl.innerHTML = '';
+        showBanner('Map failed to load — check your connection (or disable content blockers for this page), then refresh.', 'error');
+        return;
+      }
+      await fetchProfitabilityTiers(); // best-effort, never blocks on failure
+      fetchOpsData();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
